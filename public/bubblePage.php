@@ -89,11 +89,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_message_id'])) {
     <title>Bubble Posts</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
     .dropdown:hover .dropdown-menu { display: block; }
     .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.4); }
     .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px; }
-    .sidebar { width: 80px; transition: width 0.3s; position: fixed; top: 0; left: 0; height: 100%; overflow: hidden; }
+    .sidebar { width: 80px; transition: width 0.3s; position: fixed; top: 0; left: 0; height: 100%; overflow: visible; }
     .navbar { position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; }
     .dropdown-menu {z-index: 50; /* Ensure this value is higher than other elements */}
     </style>
@@ -382,26 +383,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_message_id'])) {
             dropdownMenu.classList.toggle('hidden');
         });
 
-        // Fetch joined bubbles and populate the sidebar
-        function fetchJoinedBubbles() {
-            fetch("joinedBubble.php")
-            .then(response => response.json())
-            .then(data => {
-                const bubbleList = document.getElementById("bubble-list");
-                bubbleList.innerHTML = "";
-                data.bubbles.forEach(bubble => {
-                    const bubbleItem = document.createElement("li");
-                    bubbleItem.className = "bubble-container";
-                    bubbleItem.innerHTML = `
-                        <a href="bubblePage.php?bubble_id=${bubble.id}" class="block p-2 text-center hover:bg-gray-700">
-                            <img src="data:image/jpeg;base64,${bubble.profile_image}" alt="${bubble.bubble_name}" class="w-10 h-10 rounded-full mx-auto">
-                        </a>
-                    `;
-                    bubbleList.appendChild(bubbleItem);
-                });
-            })
-            .catch(error => console.error("Error fetching joined bubbles:", error));
-        }
+// Fetch the list of bubbles the user has joined
+function fetchJoinedBubbles() {
+    fetch("joinedBubble.php")
+    .then(response => response.json())
+    .then(data => {
+        const bubbleList = document.getElementById("bubble-list");
+        bubbleList.innerHTML = "";
+        data.bubbles.forEach(bubble => {
+            const bubbleItem = document.createElement("li");
+            bubbleItem.className = "bubble-container relative";
+            bubbleItem.innerHTML = `
+                <a href="bubblePage.php?bubble_id=${bubble.id}" class="block p-2 text-center transform hover:scale-105 transition-transform duration-200 relative">
+                    <img src="data:image/jpeg;base64,${bubble.profile_image}" alt="${bubble.bubble_name}" class="w-10 h-10 rounded-full mx-auto">
+                    <div class="bubble-name-modal absolute left-full top-1/2 transform -translate-y-1/2 ml-2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 transition-opacity duration-200">${bubble.bubble_name}</div>
+                </a>
+            `;
+            bubbleList.appendChild(bubbleItem);
+        });
+
+        // Add event listeners to show/hide the modal on hover
+        document.querySelectorAll('.bubble-container a').forEach(anchor => {
+            anchor.addEventListener('mouseenter', function() {
+                const modal = this.querySelector('.bubble-name-modal');
+                modal.classList.remove('opacity-0');
+                modal.classList.add('opacity-100');
+            });
+            anchor.addEventListener('mouseleave', function() {
+                const modal = this.querySelector('.bubble-name-modal');
+                modal.classList.remove('opacity-100');
+                modal.classList.add('opacity-0');
+            });
+        });
+    })
+    .catch(error => {
+        console.error("Error fetching joined bubbles:", error);
+    });
+}
 
         // Fetch joined bubbles on page load
         document.addEventListener("DOMContentLoaded", fetchJoinedBubbles);
