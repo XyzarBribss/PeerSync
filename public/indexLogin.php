@@ -4,6 +4,7 @@ require_once 'vendor/autoload.php';
 include 'config.php';
 
 
+
 // Create Google Client
 $client = new Google_Client();
 $client->setClientId($clientID);
@@ -215,10 +216,12 @@ if (isset($_GET['code'])) {
                         </div>
                     </div>
                     <button class="w-full bg-blue-500 text-white p-2 rounded">Login</button>
-                    <span class="block mt-4">or use your account</span>
-                    <a href="<?php echo $client->createAuthUrl(); ?>" class="social text-red-600">
-                        <img src="googleimg.png" alt="Google Sign-In" width="50" height="50" />
-                    </a>
+                    <div class="flex flex-col items-center mt-4">
+                        <span class="block text-gray-500">or login with google</span>
+                        <a href="<?php echo $client->createAuthUrl(); ?>" class="social text-red-600 mt-2">
+                            <img src="googleimg.png" alt="Google Sign-In" width="30" height="30" />
+                        </a>
+                    </div>
                     <div class="social-container flex justify-center mt-4 space-x-4">
                         <a href="#" class="social text-blue-600"><i class="lni lni-facebook-fill"></i></a>
                         <a href="#" class="social text-red-600"><i class="lni lni-google"></i></a>
