@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Choose Your Plan</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f0f0;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: white;
+        border-radius: 0 0 50px 0;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 40px;
+      }
+      .logo {
+        font-weight: bold;
+        font-size: 24px;
+        color: #14546f;
+      }
+      nav a {
+        margin-left: 20px;
+        text-decoration: none;
+        color: #14546f;
+      }
+      nav a.active {
+        border-bottom: 2px solid #14546f;
+      }
+      h1 {
+        text-align: center;
+        color: #14546f;
+        font-size: 36px;
+      }
+      .toggle {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+      }
+      .toggle button {
+        padding: 10px 20px;
+        border: none;
+        background-color: #e6f3f7;
+        color: #14546f;
+        cursor: pointer;
+      }
+      .toggle button.active {
+        background-color: #14546f;
+        color: white;
+      }
+      .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 40px;
+      }
+      .plans {
+        display: flex;
+        justify-content: center;
+        gap: 20px; /* Add some space between the boxes */
+      }
+      .plan {
+        width: 40%;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+      }
+
+      .plan.featured ul li {
+        color: white;
+      }
+      .plan h2 {
+        color: #14546f;
+      }
+      .plan .price {
+        font-size: 36px;
+        font-weight: bold;
+        color: #14546f;
+        margin: 20px 0;
+      }
+      .plan ul {
+        list-style-type: none;
+        padding: 0;
+        text-align: left;
+      }
+      .plan ul li {
+        margin-bottom: 10px;
+        color: #666;
+      }
+      .plan ul li::before {
+        content: "✓";
+        color: #4caf50;
+        margin-right: 10px;
+      }
+      .plan button {
+        background-color: #e6f3f7;
+        color: #14546f;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 20px;
+      }
+      .plan.featured {
+        background-color: #14546f;
+        color: white;
+      }
+      .plan.featured h2,
+      .plan.featured .price {
+        color: white;
+      }
+      .plan.featured button {
+        background-color: white;
+        color: #14546f;
+      }
+      .comparison {
+        text-align: center;
+        margin-top: 40px;
+        color: #14546f;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="logo">UNTITLED</div>
+        <nav>
+          <a href="#">Home</a>
+          <a href="#" class="active">Pricing</a>
+          <a href="#">Contact us</a>
+        </nav>
+      </header>
+      <h1>Choose Your Plan</h1>
+      <div class="toggle">
+        <button class="active">Monthly</button>
+        <button>Yearly (Save 2.55)</button>
+      </div>
+      <div class="subtitle">Best Plans For Office Management</div>
+      <div class="plans">
+        <div class="plan">
+          <h2>Basic</h2>
+          <div class="price">$0.00</div>
+          <ul>
+            <li>Bubble Creation</li>
+            <li>Timeline</li>
+            <li>Limited access to Notes</li>
+            <li>Chat Support</li>
+          </ul>
+          <button data-plan="Basic">Choose Plan</button>
+        </div>
+        <div class="plan featured">
+          <h2>Advance</h2>
+          <div class="price">$5.00</div>
+          <ul>
+            <li>Notes Transaction</li>
+            <li>Unlimited access to notes</li>
+            <li>Unlimited Bubble Creation</li>
+            <li>Unlimited access to Advanced Notes</li>
+            <li>User resource Commodity</li>
+            <li>Chat Support</li>
+          </ul>
+          <button data-plan="Advance">Choose Plan</button>
+        </div>
+      </div>
+      <div class="comparison">Show Detailed Plan Comparison ▼</div>
+    </div>
+
+    <script>
+      // JavaScript to handle button clicks and AJAX request
+      document.querySelectorAll(".plans button").forEach((button) => {
+        button.addEventListener("click", function () {
+          const plan = this.getAttribute("data-plan");
+
+          // Send the selected plan to the server
+          fetch("revenue.php", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: `plan=${encodeURIComponent(plan)}`,
+          })
+            .then((response) => response.text())
+            .then((data) => {
+              alert(data); // Show a confirmation message
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+            });
+        });
+      });
+    </script>
+  </body>
+</html>

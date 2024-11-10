@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bubble Page</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+      }
+      .navbar {
+        height: 60px;
+        flex-shrink: 0;
+      }
+      .main-content {
+        display: flex;
+        flex-grow: 1;
+        overflow: hidden;
+      }
+      .sidebar {
+        width: 250px;
+        background-color: #e0e0e0;
+        padding: 20px;
+        height: 100%;
+        overflow-y: auto;
+        flex-shrink: 0;
+      }
+      .content-container {
+        flex-grow: 1;
+        padding: 20px;
+        height: 100%;
+        overflow-y: auto;
+      }
+      .bubble-image-small {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 10px;
+      }
+      .dropdown-item {
+        display: flex;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body class="bg-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <!-- Direct Messages Symbol -->
+        <div
+          class="navbar-brand cursor-pointer"
+          onclick="window.location.href='indexBubble.php'"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8 10h.01M12 10h.01M16 10h.01M9 16h6M21 12c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8 8 3.582 8 8z"
+            />
+          </svg>
+        </div>
+        <!-- Join a Bubble Button -->
+        <button
+          class="btn btn-primary"
+          onclick="window.location.href='exploreBubble.php'"
+        >
+          Bubbles
+        </button>
+      </div>
+    </nav>
+
+    <div class="main-content">
+      <!-- Left Sidebar -->
+      <div class="sidebar bg-light p-3">
+        <!-- Favorites Container -->
+        <div class="mt-4">
+          <h3 class="h5">Favorites</h3>
+          <ul class="list-unstyled">
+            <li class="mb-2"><a href="#" class="text-dark">Favorite 1</a></li>
+            <li class="mb-2"><a href="#" class="text-dark">Favorite 2</a></li>
+            <li class="mb-2"><a href="#" class="text-dark">Favorite 3</a></li>
+          </ul>
+        </div>
+
+        <!-- Top Bubbles Container -->
+        <div class="mt-4">
+          <h3 class="h5">Top Bubbles</h3>
+          <ul class="list-unstyled">
+            <li class="mb-2"><a href="#" class="text-dark">Bubble 1</a></li>
+            <li class="mb-2"><a href="#" class="text-dark">Bubble 2</a></li>
+            <li class="mb-2"><a href="#" class="text-dark">Bubble 3</a></li>
+          </ul>
+        </div>
+
+        <!-- PeerSync Premium Container -->
+        <div class="mt-4">
+          <h3 class="h5">PeerSync Premium</h3>
+          <p class="text-dark">
+            Upgrade to PeerSync Premium for exclusive features and benefits.
+          </p>
+          <button class="btn btn-primary mt-2">Upgrade</button>
+        </div>
+      </div>
+
+      <!-- Content Container -->
+      <div class="content-container flex-grow-1 p-3">
+        <h2 class="h4 mb-4">Bubble Posts</h2>
+        <!-- Create a Post Button -->
+        <button
+          id="create-post-btn"
+          class="btn btn-primary mb-4"
+          data-bs-toggle="modal"
+          data-bs-target="#postModal"
+        >
+          Create a Post
+        </button>
+
+        <div id="posts" class="flex-grow-1 overflow-auto">
+          <!-- Posts will be dynamically inserted here -->
+        </div>
+      </div>
+
+      <!-- Right Sidebar -->
+      <div class="sidebar bg-light p-3">
+        <!-- Additional Content for Right Sidebar -->
+        <div class="mt-4">
+          <h3 class="h5">Right Sidebar Content</h3>
+          <ul class="list-unstyled">
+            <li class="mb-2"><a href="#" class="text-dark">Link 1</a></li>
+            <li class="mb-2"><a href="#" class="text-dark">Link 2</a></li>
+            <li class="mb-2"><a href="#" class="text-dark">Link 3</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Post Form Modal -->
+    <div
+      class="modal fade"
+      id="postModal"
+      tabindex="-1"
+      aria-labelledby="postModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="postModalLabel">Create a Post</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="post-form">
+              <select id="bubble-select" class="form-select mb-3" required>
+                <option value="" disabled selected>Select a Bubble</option>
+              </select>
+              <input
+                type="text"
+                id="post-title"
+                class="form-control mb-3"
+                placeholder="Title"
+                required
+              />
+              <textarea
+                id="post-message"
+                class="form-control mb-3"
+                placeholder="Message"
+                required
+              ></textarea>
+              <input type="file" id="post-image" class="form-control mb-3" />
+              <button type="submit" class="btn btn-primary">Post</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+  </body>
+</html>
