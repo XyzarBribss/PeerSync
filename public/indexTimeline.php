@@ -109,6 +109,33 @@ $stmt->close();
                         <i class="fas fa-search"></i>
                     </button>
                 </div>
+                <?php
+                // Search functionality
+                if (isset($_GET['search'])) {
+                    $search_term = '%' . $_GET['search'] . '%';
+                    $search_query = "
+                        SELECT bp.*, u.username, u.profile_image, b.bubble_name AS bubble_name
+                        FROM bubble_posts bp
+                        JOIN user_bubble ub ON bp.bubble_id = ub.bubble_id
+                        JOIN users u ON bp.user_id = u.id
+                        JOIN bubbles b ON bp.bubble_id = b.id
+                        WHERE ub.user_id = ? AND (bp.title LIKE ? OR bp.message LIKE ?)
+                    ";
+                    $stmt = $conn->prepare($search_query);
+                    $stmt->bind_param('iss', $logged_in_user_id, $search_term, $search_term);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $posts = $result->fetch_all(MYSQLI_ASSOC);
+                    $stmt->close();
+                }
+                ?>
+                <script>
+                document.getElementById('searchButton').addEventListener('click', function() {
+                    const searchBar = document.getElementById('searchBar');
+                    const searchTerm = searchBar.value;
+                    window.location.href = `indexTimeline.php?search=${encodeURIComponent(searchTerm)}`;
+                });
+                </script>
                 <!-- Display posts here -->
                 <?php foreach ($posts as $post): ?>
                     <?php

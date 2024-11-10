@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Execute the statement
     if ($stmt->execute()) {
         // If the post was added successfully, return a success response
-        echo json_encode(['success' => true]);
+        header("Location: indexTimeline.php");
     } else {
         // If there was an error adding the post, return an error response
         echo json_encode(['success' => false, 'error' => $stmt->error]);

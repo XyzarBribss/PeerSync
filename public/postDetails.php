@@ -35,11 +35,6 @@ $result = $stmt->get_result();
 $post = $result->fetch_assoc();
 $stmt->close();
 
-// Check if the post exists
-if (!$post) {
-    echo "Post not found.";
-    exit();
-}
 
 // Convert the image to base64 if it exists
 $image_base64 = '';
@@ -77,6 +72,44 @@ $comment_count = $comment_result->fetch_assoc()['comment_count'];
 
 // Close the statement
 $stmt->close();
+
+// Handle post deletion
+if (isset($_POST['delete_post_id'])) {
+    $delete_post_id = $_POST['delete_post_id'];
+
+    // Check if the user is the owner of the post
+    $query = "SELECT user_id FROM bubble_posts WHERE id = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param('i', $delete_post_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $post_owner = $result->fetch_assoc();
+    $stmt->close();
+
+    if ($post_owner && $post_owner['user_id'] == $user_id) {
+        // Delete the post
+        $query = "DELETE FROM bubble_posts WHERE id = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param('i', $delete_post_id);
+        $stmt->execute();
+        $stmt->close();
+
+        // Determine the previous URL
+        $previous_url = $_SERVER['HTTP_REFERER'];
+
+        // Redirect based on the previous URL
+        if (strpos($previous_url, 'indexTimeline.php') !== false) {
+            header("Location: indexTimeline.php");
+        } elseif (strpos($previous_url, 'bubblePage.php') !== false) {
+            header("Location: bubblePage.php?bubble_id=" . $post['bubble_id']);
+        } else {
+            header("Location: indexTimeline.php"); // Default redirection
+        }
+        exit();
+        } else {
+        echo "You do not have permission to delete this post.";
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -152,7 +185,10 @@ $stmt->close();
                                 <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="menu-button-<?= $post['id'] ?>" tabindex="-1" id="menu-<?= $post['id'] ?>">
                                     <div class="py-1" role="none">
                                         <a href="editPost.php?post_id=<?= htmlspecialchars($post_id) ?>" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="menu-item-1">Edit</a>
-                                        <a href="deletePost.php?post_id=<?= htmlspecialchars($post_id) ?>" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="menu-item-2">Delete</a>
+                                        <form action="postDetails.php?post_id=<?= htmlspecialchars($post_id) ?>" method="post">
+                                            <input type="hidden" name="delete_post_id" value="<?= htmlspecialchars($post_id) ?>">
+                                            <button type="submit" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="menu-item-2">Delete</button>
+                                        </form>
                                     </div>
                                 </div>
                             <?php endif; ?>

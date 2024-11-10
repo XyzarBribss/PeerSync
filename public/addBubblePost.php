@@ -28,7 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Execute the statement
     if ($stmt->execute()) {
         // If the post was added successfully, return a success response
-        echo json_encode(['success' => true]);
+        header("Location: bubblePage.php?bubble_id=" . $bubble_id);
+        exit();
     } else {
         // If there was an error adding the post, return an error response
         echo json_encode(['success' => false, 'error' => $stmt->error]);
