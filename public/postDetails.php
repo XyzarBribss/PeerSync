@@ -215,8 +215,8 @@ if (isset($_POST['update_post_id'])) {
                                 </button>
                                 <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="menu-button-<?= $post['id'] ?>" tabindex="-1" id="menu-<?= $post['id'] ?>">
                                     <div class="py-1" role="none">
-                                    <a href="#" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="menu-item-3" onclick="openEditModal(<?= htmlspecialchars($post_id) ?>)">Edit</a>
                                     <form action="postDetails.php?post_id=<?= htmlspecialchars($post_id) ?>" method="post">
+                                            <a href="#" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="menu-item-3" onclick="openEditModal(<?= htmlspecialchars($post_id) ?>)">Edit</a>
                                             <input type="hidden" name="delete_post_id" value="<?= htmlspecialchars($post_id) ?>">
                                             <button type="submit" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="menu-item-2">Delete</button>
                                         </form>
@@ -349,6 +349,33 @@ function toggleReplies(commentId) {
         </div>
     </div>
 
+    <!-- Edit Post Modal -->
+    <div id="editPostModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <h2>Edit Post</h2>
+            <form action="postDetails.php?post_id=<?= htmlspecialchars($post_id) ?>" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="update_post_id" value="<?= htmlspecialchars($post_id) ?>">
+                <div class="mb-4">
+                    <label for="title" class="block text-gray-700">Title</label>
+                    <input type="text" name="title" id="editPostTitle" class="w-full p-2 border rounded" value="<?= htmlspecialchars($post['title']) ?>" required>
+                </div>
+                <div class="mb-4">
+                    <label for="message" class="block text-gray-700">Message</label>
+                    <textarea name="message" id="editPostMessage" class="w-full p-2 border rounded" rows="4" required><?= htmlspecialchars($post['message']) ?></textarea>
+                </div>
+                <div class="mb-4">
+                    <label for="image" class="block text-gray-700">Image</label>
+                    <input type="file" name="image" id="editPostImage" class="w-full p-2 border rounded">
+                    <?php if (!empty($image_base64)): ?>
+                        <img src="<?= $image_base64 ?>" alt="Post Image" class="w-full h-auto rounded mt-2">
+                    <?php endif; ?>
+                </div>
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Toggle dropdown menu
         document.getElementById('profileImage').addEventListener('click', function() {
@@ -402,6 +429,22 @@ function fetchJoinedBubbles() {
         dropdownMenu.classList.toggle('hidden');
     });
 });
+
+function openEditModal(postId) {
+    document.getElementById('editPostModal').style.display = 'block';
+}
+
+function closeEditModal() {
+    document.getElementById('editPostModal').style.display = 'none';
+}
+
+// Close the modal when clicking outside of it
+window.onclick = function(event) {
+    const modal = document.getElementById('editPostModal');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+}
     </script>
 </body>
 </html>
