@@ -37,6 +37,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_notebook_id']))
     }
 }
 
+// Handle notebook export
+
+
 // Fetch notebooks for the logged-in user
 $notebooks = [];
 $user_id = $_SESSION['user_id']; // Assuming user_id is stored in session
@@ -60,6 +63,35 @@ $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 $stmt->close();
+
+// Fetch notebooks for the logged-in user with optional search query
+$notebooks = [];
+$user_id = $_SESSION['user_id']; // Assuming user_id is stored in session
+
+// Check if a search query is provided
+$search_query = isset($_GET['search_query']) ? $conn->real_escape_string($_GET['search_query']) : '';
+
+// Adjust the SQL query based on the search query
+if ($search_query) {
+    $sql = "SELECT * FROM notebooks WHERE user_id = ? AND name LIKE ?";
+    $stmt = $conn->prepare($sql);
+    $search_param = "%$search_query%";
+    $stmt->bind_param("is", $user_id, $search_param);
+} else {
+    $sql = "SELECT * FROM notebooks WHERE user_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $user_id);
+}
+
+$stmt->execute();
+$result = $stmt->get_result();
+if ($result && $result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $notebooks[] = $row;
+    }
+}
+$stmt->close();
+
 ?>
 
 <!DOCTYPE html>
@@ -90,7 +122,7 @@ $stmt->close();
         .dropdown:hover .dropdown-menu { display: block; }
         .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.4); }
         .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px; }
-        .sidebar { width: 80px; transition: width 0.3s; position: fixed; top: 0; left: 0; height: 100%; overflow: visible; }
+        .sidebar { width: 80px; transition: width 0.3s; position: fixed; top: 0; left: 0; height: 100%; overflow: hidden; }
         .navbar { position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; }
         .content { margin-top: 64px; margin-left: 80px; transition: margin-left 0.3s; }
         .right-sidebar { position: fixed; right: 0; height: calc(100% - 64px); overflow-y: auto; z-index: 100; margin-top: 80px; }
@@ -121,7 +153,7 @@ $stmt->close();
 </head>
 <body class="bg-gray-100 p-6">
     <!-- Navbar -->
-    <nav class="navbar bg-secondary-100 text-white  flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;}">
+    <nav class="navbar bg-secondary-100 text-white  flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;">
         <div class="flex items-center">
             <a href="indexTimeline.php"><img src="../public/ps.png" alt="Peerync Logo" class="h-16 w-16"></a>
             <span class="text-2xl font-bold">PeerSync</span>
@@ -161,6 +193,7 @@ $stmt->close();
                     <div class="container mx-auto px-4 py-4">
                         <div class="flex items-center justify-between">
                             <h2 class="text-2xl font-semibold">Your Notebooks</h2>
+                            <input type="text" id="searchBox" placeholder="Search notebooks..." class="border-2 border-solid p-2 rounded-md float-right mr-6 ml-6 mt-4" oninput="searchNotebooks()">
                             <button class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded shadow flex items-center" onclick="showAddNotebookModal()">
                                 <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -199,8 +232,18 @@ $stmt->close();
                                 <button type="submit" class="text-red-500 hover:text-red-700">
                                     <i class="fas fa-trash-alt"></i>
                                     <span class="sr-only">Delete notebook</span>
+                                    
                                 </button>
                             </form>
+
+                            <form action="export_to_pdf.php" method="POST">
+                                <input type="hidden" name="notebook_id" value="<?php echo $notebook['id']; ?>">
+                                <button type="submit" class="text-blue-500 hover:text-blue-700">
+                                    <i class="fas fa-file-export"></i>
+                                    <span class="sr-only">Export notebook</span>
+                                </button>
+                            </form>
+
                         </div>
                     </div>
                 </a>
@@ -229,43 +272,43 @@ $stmt->close();
             dropdownMenu.classList.toggle('hidden');
         });
 
-// Fetch the list of bubbles the user has joined
-function fetchJoinedBubbles() {
-    fetch("joinedBubble.php")
-    .then(response => response.json())
-    .then(data => {
-        const bubbleList = document.getElementById("bubble-list");
-        bubbleList.innerHTML = "";
-        data.bubbles.forEach(bubble => {
-            const bubbleItem = document.createElement("li");
-            bubbleItem.className = "bubble-container relative";
-            bubbleItem.innerHTML = `
-                <a href="bubblePage.php?bubble_id=${bubble.id}" class="block p-2 text-center transform hover:scale-105 transition-transform duration-200 relative">
-                    <img src="data:image/jpeg;base64,${bubble.profile_image}" alt="${bubble.bubble_name}" class="w-10 h-10 rounded-full mx-auto">
-                    <div class="bubble-name-modal absolute left-full top-1/2 transform -translate-y-1/2 ml-2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 transition-opacity duration-200">${bubble.bubble_name}</div>
-                </a>
-            `;
-            bubbleList.appendChild(bubbleItem);
-        });
+        function searchNotebooks() {
+    const searchQuery = document.getElementById('searchBox').value.toLowerCase();
+    const notebooks = document.querySelectorAll('.notebook');
 
-        // Add event listeners to show/hide the modal on hover
-        document.querySelectorAll('.bubble-container a').forEach(anchor => {
-            anchor.addEventListener('mouseenter', function() {
-                const modal = this.querySelector('.bubble-name-modal');
-                modal.classList.remove('opacity-0');
-                modal.classList.add('opacity-100');
-            });
-            anchor.addEventListener('mouseleave', function() {
-                const modal = this.querySelector('.bubble-name-modal');
-                modal.classList.remove('opacity-100');
-                modal.classList.add('opacity-0');
-            });
-        });
-    })
-    .catch(error => {
-        console.error("Error fetching joined bubbles:", error);
+    notebooks.forEach(notebook => {
+        const notebookName = notebook.querySelector('.notebook-header h3').innerText.toLowerCase();
+        if (notebookName.includes(searchQuery)) {
+            notebook.style.display = 'block';
+        } else {
+            notebook.style.display = 'none';
+        }
     });
 }
+
+
+        // Fetch the list of bubbles the user has joined
+        function fetchJoinedBubbles() {
+            fetch("joinedBubble.php")
+            .then(response => response.json())
+            .then(data => {
+                const bubbleList = document.getElementById("bubble-list");
+                bubbleList.innerHTML = "";
+                data.bubbles.forEach(bubble => {
+                    const bubbleItem = document.createElement("li");
+                    bubbleItem.className = "bubble-container";
+                    bubbleItem.innerHTML = `
+                        <a href="bubblePage.php?bubble_id=${bubble.id}" class="block p-2 text-center hover:bg-gray-700">
+                            <img src="data:image/jpeg;base64,${bubble.profile_image}" alt="${bubble.bubble_name}" class="w-10 h-10 rounded-full mx-auto">
+                        </a>
+                    `;
+                    bubbleList.appendChild(bubbleItem);
+                });
+            })
+            .catch(error => {
+                console.error("Error fetching joined bubbles:", error);
+            });
+        }
 
         document.addEventListener("DOMContentLoaded", fetchJoinedBubbles);
     </script>

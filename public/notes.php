@@ -135,14 +135,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
 </head>
 <style>
     .dropdown:hover .dropdown-menu { display: block; }
-    .sidebar { width: 80px; transition: width 0.3s; position: fixed; top: 0; left: 0; height: 100%; overflow: visible; }
+    .sidebar { width: 80px; transition: width 0.3s; position: fixed; top: 0; left: 0; height: 100%; overflow: hidden; }
     .navbar { position: fixed; top: 0; left: 0; width: 100%; z-index: 999; }
     .content { margin-top: 64px; margin-left: 80px; transition: margin-left 0.3s; }
 </style>
 <body class="bg-gray-100 p-6">
 
     <!-- Navbar -->
-    <nav class="navbar bg-secondary-100 text-white flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;}">
+    <nav class="navbar bg-secondary-100 text-white flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;">
         <div class="flex items-center">
             <a href="indexTimeline.php"><img src="../public/ps.png" alt="Peerync Logo" class="h-16 w-16"></a>
             <span class="text-2xl font-bold">PeerSync</span>
@@ -202,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
                     <div class="relative ml-4">
                         <form method="GET" action="notes.php">
                             <input type="hidden" name="notebook_id" value="<?php echo htmlspecialchars($notebook_id); ?>">
-                            <input type="text" name="search_term" id="searchNotes" placeholder="Search notes..." class="border-2 h-10 w-full p-2 rounded">
+                            <input type="text" name="search_term" id="searchNotes" placeholder="Search notes..." class="border-2 h-10 w-full p-2 rounded" oninput="searchNotes()">
                             <button type="submit" class="absolute right-0 top-0 mt-2 mr-2">
                                 <i class="fas fa-search"></i>
                             </button>
@@ -260,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
 
     <!-- Note Details Modal -->
     <div id="noteDetailsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 999;">
-        <div style=" position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 10px; border: 2px solid #49759E; width: 80%;">
+        <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 40px; border-radius: 10px; border: 2px solid #49759E; width: 60%; height: 90%; overflow-y: auto;">
             <form method="POST" action="notes.php">
                 <input type="hidden" name="update_note_id" id="update_note_id">
                 <input type="hidden" name="notebook_id" value="<?php echo htmlspecialchars($notebook_id); ?>">
@@ -289,13 +289,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
     <script>
     // Initialize TinyMCE
     tinymce.init({
-        selector: '#noteContent, #noteDetailsContent',height: 700, max_height: 700, min_height: 700,
+        selector: '#noteContent, #noteDetailsContent',
         plugins: [
             'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
             'checklist', 'mediaembed', 'casechange', 'export', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'editimage', 'advtemplate', 'ai', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown',
             'importword', 'exportword', 'exportpdf'
         ],
-        toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough forecolor backcolor | quick image media table mergetags | checklist numlist bullist indent outdent | spellcheckdialog | align lineheight |  addcomment showcomments | emoticons charmap | removeformat ',
+        toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
         tinycomments_mode: 'embedded',
         tinycomments_author: 'Author name',
         mergetags_list: [
@@ -339,43 +339,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
         dropdownMenu.classList.toggle('hidden');
     });
 
-// Fetch the list of bubbles the user has joined
-function fetchJoinedBubbles() {
-    fetch("joinedBubble.php")
-    .then(response => response.json())
-    .then(data => {
-        const bubbleList = document.getElementById("bubble-list");
-        bubbleList.innerHTML = "";
-        data.bubbles.forEach(bubble => {
-            const bubbleItem = document.createElement("li");
-            bubbleItem.className = "bubble-container relative";
-            bubbleItem.innerHTML = `
-                <a href="bubblePage.php?bubble_id=${bubble.id}" class="block p-2 text-center transform hover:scale-105 transition-transform duration-200 relative">
-                    <img src="data:image/jpeg;base64,${bubble.profile_image}" alt="${bubble.bubble_name}" class="w-10 h-10 rounded-full mx-auto">
-                    <div class="bubble-name-modal absolute left-full top-1/2 transform -translate-y-1/2 ml-2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 transition-opacity duration-200">${bubble.bubble_name}</div>
-                </a>
-            `;
-            bubbleList.appendChild(bubbleItem);
-        });
+    function searchNotes() {
+    let input = document.getElementById("searchNotes").value.toLowerCase();
+    let notes = document.querySelectorAll(".note-item"); // Assuming .note-item is the class for each note.
 
-        // Add event listeners to show/hide the modal on hover
-        document.querySelectorAll('.bubble-container a').forEach(anchor => {
-            anchor.addEventListener('mouseenter', function() {
-                const modal = this.querySelector('.bubble-name-modal');
-                modal.classList.remove('opacity-0');
-                modal.classList.add('opacity-100');
-            });
-            anchor.addEventListener('mouseleave', function() {
-                const modal = this.querySelector('.bubble-name-modal');
-                modal.classList.remove('opacity-100');
-                modal.classList.add('opacity-0');
-            });
-        });
-    })
-    .catch(error => {
-        console.error("Error fetching joined bubbles:", error);
+    notes.forEach(note => {
+        let noteContent = note.textContent.toLowerCase();
+        if (noteContent.includes(input)) {
+            note.style.display = ""; // Show matching notes.
+        } else {
+            note.style.display = "none"; // Hide non-matching notes.
+        }
     });
 }
+
+
+        // Fetch the list of bubbles the user has joined
+        function fetchJoinedBubbles() {
+            fetch("joinedBubble.php")
+            .then(response => response.json())
+            .then(data => {
+                const bubbleList = document.getElementById("bubble-list");
+                bubbleList.innerHTML = "";
+                data.bubbles.forEach(bubble => {
+                    const bubbleItem = document.createElement("li");
+                    bubbleItem.className = "bubble-container";
+                    bubbleItem.innerHTML = `
+                        <a href="bubblePage.php?bubble_id=${bubble.id}" class="block p-2 text-center hover:bg-gray-700">
+                            <img src="data:image/jpeg;base64,${bubble.profile_image}" alt="${bubble.bubble_name}" class="w-10 h-10 rounded-full mx-auto">
+                        </a>
+                    `;
+                    bubbleList.appendChild(bubbleItem);
+                });
+            })
+            .catch(error => {
+                console.error("Error fetching joined bubbles:", error);
+            });
+        }
+
         document.addEventListener("DOMContentLoaded", fetchJoinedBubbles);
     </script>
 </body>
