@@ -116,6 +116,7 @@ if (isset($_POST['update_post_id'])) {
     $update_post_id = $_POST['update_post_id'];
     $updated_title = $_POST['title'];
     $updated_message = $_POST['message'];
+    $updated_image = $_FILES['image']['tmp_name'];
 
     // Check if the user is the owner of the post
     $query = "SELECT user_id FROM bubble_posts WHERE id = ?";
@@ -128,9 +129,17 @@ if (isset($_POST['update_post_id'])) {
 
     if ($post_owner && $post_owner['user_id'] == $user_id) {
         // Update the post
-        $query = "UPDATE bubble_posts SET title = ?, message = ? WHERE id = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param('ssi', $updated_title, $updated_message, $update_post_id);
+        if (!empty($updated_image)) {
+            $image_data = file_get_contents($updated_image);
+            $query = "UPDATE bubble_posts SET title = ?, message = ?, image = ? WHERE id = ?";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param('ssbi', $updated_title, $updated_message, $null, $update_post_id);
+            $stmt->send_long_data(2, $image_data);
+        } else {
+            $query = "UPDATE bubble_posts SET title = ?, message = ? WHERE id = ?";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param('ssi', $updated_title, $updated_message, $update_post_id);
+        }
         $stmt->execute();
         $stmt->close();
 
