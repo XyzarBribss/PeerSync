@@ -110,6 +110,37 @@ if (isset($_POST['delete_post_id'])) {
         echo "You do not have permission to delete this post.";
     }
 }
+
+// Handle post update
+if (isset($_POST['update_post_id'])) {
+    $update_post_id = $_POST['update_post_id'];
+    $updated_title = $_POST['title'];
+    $updated_message = $_POST['message'];
+
+    // Check if the user is the owner of the post
+    $query = "SELECT user_id FROM bubble_posts WHERE id = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param('i', $update_post_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $post_owner = $result->fetch_assoc();
+    $stmt->close();
+
+    if ($post_owner && $post_owner['user_id'] == $user_id) {
+        // Update the post
+        $query = "UPDATE bubble_posts SET title = ?, message = ? WHERE id = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param('ssi', $updated_title, $updated_message, $update_post_id);
+        $stmt->execute();
+        $stmt->close();
+
+        // Redirect to the post details page
+        header("Location: postDetails.php?post_id=" . $update_post_id);
+        exit();
+    } else {
+        echo "You do not have permission to update this post.";
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -184,8 +215,8 @@ if (isset($_POST['delete_post_id'])) {
                                 </button>
                                 <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="menu-button-<?= $post['id'] ?>" tabindex="-1" id="menu-<?= $post['id'] ?>">
                                     <div class="py-1" role="none">
-                                        <a href="editPost.php?post_id=<?= htmlspecialchars($post_id) ?>" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="menu-item-1">Edit</a>
-                                        <form action="postDetails.php?post_id=<?= htmlspecialchars($post_id) ?>" method="post">
+                                    <a href="#" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="menu-item-3" onclick="openEditModal(<?= htmlspecialchars($post_id) ?>)">Edit</a>
+                                    <form action="postDetails.php?post_id=<?= htmlspecialchars($post_id) ?>" method="post">
                                             <input type="hidden" name="delete_post_id" value="<?= htmlspecialchars($post_id) ?>">
                                             <button type="submit" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="menu-item-2">Delete</button>
                                         </form>
