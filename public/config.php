@@ -1,7 +1,7 @@
 <?php
 $servername = "localhost";
 $username = "root";
-$password = "uslt";
+$password = "";
 $dbname = "peersync";
 
 // Create connection
