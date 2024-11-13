@@ -3,7 +3,9 @@ session_start();
 require_once 'vendor/autoload.php';
 include 'config.php';
 
-
+$clientID = '273557119438-65dm34o7l62joqp3uvminivbkd1u6cjp.apps.googleusercontent.com';
+$clientSecret = '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';
+$redirectUri = 'http://localhost/PeerSync/public/indexLogin.php';
 
 // Create Google Client
 $client = new Google_Client();
