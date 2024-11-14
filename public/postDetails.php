@@ -150,6 +150,40 @@ if (isset($_POST['update_post_id'])) {
         echo "You do not have permission to update this post.";
     }
 }
+
+// Handle like and unlike actions
+if (isset($_POST['like_post_id'])) {
+    $like_post_id = $_POST['like_post_id'];
+
+    // Check if the user has already liked the post
+    $query = "SELECT * FROM post_likes WHERE post_id = ? AND user_id = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param('ii', $like_post_id, $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $like = $result->fetch_assoc();
+    $stmt->close();
+
+    if ($like) {
+        // Unlike the post
+        $query = "DELETE FROM post_likes WHERE post_id = ? AND user_id = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param('ii', $like_post_id, $user_id);
+        $stmt->execute();
+        $stmt->close();
+    } else {
+        // Like the post
+        $query = "INSERT INTO post_likes (post_id, user_id) VALUES (?, ?)";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param('ii', $like_post_id, $user_id);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    // Redirect to the post details page
+    header("Location: postDetails.php?post_id=" . $like_post_id);
+    exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -243,10 +277,13 @@ if (isset($_POST['update_post_id'])) {
                     </a>
                     <div class="flex items-center justify-between text-gray-500 text-sm">
                         <div class="flex justify-between w-full">
-                            <button class="flex items-center space-x-1">
-                                <i class="fas fa-thumbs-up"></i>
-                                <span>Like</span>
-                            </button>
+                            <form action="postDetails.php?post_id=<?= htmlspecialchars($post_id) ?>" method="post">
+                                <input type="hidden" name="like_post_id" value="<?= htmlspecialchars($post_id) ?>">
+                                <button type="submit" class="flex items-center space-x-1">
+                                    <i class="fas fa-thumbs-up"></i>
+                                    <span>Like</span>
+                                </button>
+                            </form>
                             <button class="flex items-center space-x-1">
                                 <i class="fas fa-comment"></i>
                                 <span>Comment (<?= $comment_count ?>)</span>
