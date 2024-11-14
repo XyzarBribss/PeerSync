@@ -184,6 +184,15 @@ if (isset($_POST['like_post_id'])) {
     header("Location: postDetails.php?post_id=" . $like_post_id);
     exit();
 }
+
+// Fetch like count
+$like_query = "SELECT COUNT(*) AS like_count FROM post_likes WHERE post_id = ?";
+$like_stmt = $conn->prepare($like_query);
+$like_stmt->bind_param('i', $post_id);
+$like_stmt->execute();
+$like_result = $like_stmt->get_result();
+$like_count = $like_result->fetch_assoc()['like_count'];
+$like_stmt->close();
 ?>
 
 <!DOCTYPE html>
@@ -277,11 +286,11 @@ if (isset($_POST['like_post_id'])) {
                     </a>
                     <div class="flex items-center justify-between text-gray-500 text-sm">
                         <div class="flex justify-between w-full">
-                            <form action="postDetails.php?post_id=<?= htmlspecialchars($post_id) ?>" method="post">
+                        <form action="postDetails.php?post_id=<?= htmlspecialchars($post_id) ?>" method="post">
                                 <input type="hidden" name="like_post_id" value="<?= htmlspecialchars($post_id) ?>">
                                 <button type="submit" class="flex items-center space-x-1">
                                     <i class="fas fa-thumbs-up"></i>
-                                    <span>Like</span>
+                                    <span>Like (<?= $like_count ?>)</span>
                                 </button>
                             </form>
                             <button class="flex items-center space-x-1">
