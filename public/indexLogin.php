@@ -177,6 +177,8 @@ if (isset($_GET['code'])) {
             <a href="Support" class="text-white hover:text-gray-200">Support</a>
             <a href="About_Us.html" class="text-white hover:text-gray-200">About Us</a>
             <a href="Login.html" class="text-white hover:text-gray-200">Sign-in</a>
+            <a href="AdminLogin.html" class="text-white hover:text-gray-200">Admin Log</a>
+            </nav>
         </nav>
     </div>
 </header>
