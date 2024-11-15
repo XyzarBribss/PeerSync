@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>View Bubbles | Simple Admin</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link rel="stylesheet" type="text/css" href="vendors/bootstrap/css/bootstrap-4.3.1/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="assets/css/simple-custom.css">
+	<link rel="stylesheet" type="text/css" href="vendors/icon/mdi/css/materialdesignicons.min.css">
+</head>
+<body>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-2">
+				<div class="sidebar">
+					<div class="brand">
+						<a href="#" class="brand-name">Simple Admin</a>
+					</div>
+					<div class="sidebar-sticky">
+						<ul class="nav flex-column">
+							<li class="nav-item">
+								<a href="dashboard.html" class="nav-link"><i class="mdi mdi-monitor"></i> Dashboard</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link" data-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample"><i class="mdi mdi-shape-outline"></i> Management <span class="badge badge-info">New</span><i class="mdi mdi-chevron-down float-right pr-2"></i></a>
+								<div class="collapse" id="collapseExample">
+									<a class="nav-link" href="table.html"><i class="mdi mdi-circle-medium"></i> Reports</a>
+									<a class="nav-link" href="view_users.html"><i class="mdi mdi-circle-medium"></i> View All Users</a>
+									<a class="nav-link" href="view_bubbles.html"><i class="mdi mdi-circle-medium"></i> View All Bubbles</a>
+									<a class="nav-link" href="modal.html"><i class="mdi mdi-circle-medium"></i> Messages</a>
+								</div>
+							</li>
+						</ul>
+					</div>
+					<div class="nav-bottom">
+						<ul class="nav">
+					
+							<li class="nav-item"><a href="../indexLogin.php" class="nav-link"><i class="mdi mdi-power"></i></a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<main class="col-md-9 col-lg-10" role="main">
+				<div class="container">
+					<div class="content-header mt-2 mb-3">
+						<h2 class="text-header">View Bubbles</h2>
+					</div>
+					<div class="row">
+						<div class="col-md-12 mb-3">
+							<div class="card">
+								<div class="card-body pb-0">
+									<button class="btn btn-primary mb-3" onclick="fetchBubbles()">Load Bubbles</button>
+									<div class="table-responsive">
+										<table class="table">
+											<thead>
+												<tr>
+													<th>ID</th>
+													<th>Bubble Name</th>
+													<th>Description</th>
+													<th>Creator ID</th>
+													<th>Created At</th>
+												</tr>
+											</thead>
+											<tbody id="bubbleTableBody">
+												<!-- Bubble data will be dynamically loaded here -->
+											</tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+	</div>
+
+	<!-- Jquery -->
+	<script src="vendors/bootstrap/js/jquery-3.3.1/jquery-3.3.1.min.js"></script>
+	<!-- Bootstrap JS -->
+	<script src="vendors/bootstrap/js/bootstrap-4.3.1/bootstrap.min.js"></script>
+	<!-- Popper -->
+	<script src="vendors/bootstrap/js/popper/pooper.min.js"></script>
+
+	<!-- Custom Script to Fetch Bubbles -->
+	<script>
+	function fetchBubbles() {
+	    fetch('View_bubbles.php') // Update this to the correct PHP file for fetching bubbles
+	        .then(response => {
+	            if (!response.ok) {
+	                throw new Error('Network response was not ok');
+	            }
+	            return response.json();
+	        })
+	        .then(data => {
+	            let tableBody = document.getElementById('bubbleTableBody');
+	            tableBody.innerHTML = ''; // Clear existing rows
+	            data.forEach(bubble => {
+	                let row = `<tr>
+	                    <td>${bubble.id}</td>
+	                    <td>${bubble.bubble_name}</td>
+	                    <td>${bubble.description || 'N/A'}</td>
+	                    <td>${bubble.creator_id}</td>
+	                    <td>${new Date(bubble.created_at).toLocaleString()}</td>
+	                </tr>`;
+	                tableBody.innerHTML += row;
+	            });
+	        })
+	        .catch(error => console.error('Error fetching bubbles:', error));
+	}
+	</script>
+
+</body>
+</html>

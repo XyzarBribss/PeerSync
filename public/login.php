@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             // Check if the account is suspended
             if ($user['status'] === 'suspended') {
-                echo "<script>alert('Your account is suspended. Please contact support.'); window.location.href = 'indexLogin.html';</script>";
+                echo "<script>alert('Your account is suspended. Please contact support.'); window.location.href = 'indexLogin.php';</script>";
             } else {
                 // Validate password or check if user is logging in with Google
                 if (password_verify($password, $user['password']) || $user['password'] === null) {
