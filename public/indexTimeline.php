@@ -12,12 +12,14 @@ $query = "
     JOIN users u ON bp.user_id = u.id
     JOIN bubbles b ON bp.bubble_id = b.id
     WHERE ub.user_id = ?
+    ORDER BY bp.created_at DESC
 ";
 $stmt = $conn->prepare($query);
 $stmt->bind_param('i', $logged_in_user_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $posts = $result->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
 
 // Fetch joined bubbles
 $sql = "
@@ -43,7 +45,6 @@ $user = $result->fetch_assoc();
 $stmt->close();
 
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -62,6 +63,70 @@ $stmt->close();
         .navbar { position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; }
         .content { margin-top: 64px; margin-left: 80px; transition: margin-left 0.3s; }
         .right-sidebar { position: fixed; right: 0; height: calc(100% - 64px); overflow-y: auto; z-index: 100; margin-top: 80px; }
+
+        /* Feedback Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .feedback-modal {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2b547e;
+        }
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+        .next-button {
+            background-color: #4682b4;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .next-button:hover {
+            background-color: #3a6d96;
+        }
     </style>
 </head>
 <body class="bg-blue-50">
@@ -172,7 +237,7 @@ $stmt->close();
                                     <i class="fas fa-comment"></i>
                                     <span>Comment (<?= $comment_count ?>)</span>
                                 </button>
-                                <button class="flex items-center space-x-1">
+                                <button onclick="openReportModal()" class="flex items-center space-x-1 hover:text-red-500 transition-colors duration-200">
                                     <i class="fas fa-flag"></i>
                                     <span>Report</span>
                                 </button>
@@ -209,7 +274,7 @@ $stmt->close();
         <div>
             <h2 class="text-xl font-semibold mb-2">PeerSync Premium</h2>
             <p class="text-sm text-gray-600 mb-4">Unlock exclusive features and content with PeerSync Premium.</p>
-            <a href="premium.php" class="block w-full py-2 bg-yellow-500 text-white text-center rounded hover:bg-yellow-600 transition duration-300">Learn More</a>
+            <a href="TP.html" class="block w-full py-2 bg-yellow-500 text-white text-center rounded hover:bg-yellow-600 transition duration-300">Learn More</a>
         </div>
         </div>
     </aside>
@@ -275,6 +340,66 @@ $stmt->close();
         </div>
     </div>
 
+    <!-- Report Modal -->
+    <div id="reportModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 md:mx-auto">
+            <!-- Modal header -->
+            <div class="flex items-center justify-between p-4 border-b">
+                <h3 class="text-xl font-semibold text-gray-900">
+                    Report Content
+                </h3>
+                <button onclick="closeReportModal()" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Modal body -->
+            <div class="p-6">
+                <p class="text-gray-600 mb-6">
+                    Please select a reason for reporting this content. Your report will help us maintain a safe community.
+                </p>
+                <form id="reportForm" onsubmit="handleReport(event)" class="space-y-4">
+                    <div class="space-y-3">
+                        <label class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200">
+                            <input type="radio" name="reportReason" value="inappropriate" class="h-4 w-4 text-blue-600 focus:ring-blue-500" required>
+                            <span class="text-gray-700">Inappropriate content</span>
+                        </label>
+                        <label class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200">
+                            <input type="radio" name="reportReason" value="spam" class="h-4 w-4 text-blue-600 focus:ring-blue-500">
+                            <span class="text-gray-700">Spam or misleading</span>
+                        </label>
+                        <label class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200">
+                            <input type="radio" name="reportReason" value="harassment" class="h-4 w-4 text-blue-600 focus:ring-blue-500">
+                            <span class="text-gray-700">Harassment or bullying</span>
+                        </label>
+                        <label class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200">
+                            <input type="radio" name="reportReason" value="violence" class="h-4 w-4 text-blue-600 focus:ring-blue-500">
+                            <span class="text-gray-700">Violence or threats</span>
+                        </label>
+                        <label class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200">
+                            <input type="radio" name="reportReason" value="other" class="h-4 w-4 text-blue-600 focus:ring-blue-500">
+                            <span class="text-gray-700">Other</span>
+                        </label>
+                    </div>
+                    
+                    <!-- Additional details textarea, shown when "Other" is selected -->
+                    <div id="otherDetailsContainer" class="hidden">
+                        <textarea name="otherDetails" rows="3" class="mt-4 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Please provide additional details..."></textarea>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" onclick="closeReportModal()" class="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium rounded-lg text-sm">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-red-600 text-white font-medium rounded-lg text-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                            Submit Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Toggle dropdown menu
         document.getElementById('profileImage').addEventListener('click', function() {
@@ -319,6 +444,56 @@ $stmt->close();
                 bubbleModal.style.display = 'none';
             }
         }
+
+        // Report modal functionality
+        function openReportModal() {
+            document.getElementById('reportModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeReportModal() {
+            document.getElementById('reportModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            // Reset form
+            document.getElementById('reportForm').reset();
+            document.getElementById('otherDetailsContainer').classList.add('hidden');
+        }
+
+        // Handle showing/hiding the "Other" details textarea
+        document.querySelectorAll('input[name="reportReason"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const otherDetails = document.getElementById('otherDetailsContainer');
+                if (this.value === 'other') {
+                    otherDetails.classList.remove('hidden');
+                } else {
+                    otherDetails.classList.add('hidden');
+                }
+            });
+        });
+
+        // Handle form submission
+        function handleReport(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const reason = formData.get('reportReason');
+            const details = formData.get('otherDetails');
+            
+            // Here you would typically send this data to your server
+            console.log('Report submitted:', { reason, details });
+            
+            // Show success message
+            alert('Thank you for your report. We will review it shortly.');
+            
+            // Close the modal
+            closeReportModal();
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('reportModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeReportModal();
+            }
+        });
 
 // Fetch the list of bubbles the user has joined
 function fetchJoinedBubbles() {
