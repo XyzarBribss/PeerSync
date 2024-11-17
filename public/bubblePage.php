@@ -80,6 +80,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_message_id'])) {
     header("Location: bubblePage.php?bubble_id=" . $bubble_id);
     exit();
 }
+
+// Fetch notebooks
+$notebook_query = "SELECT notebooks.*, users.username, users.profile_image 
+                   FROM notebooks 
+                   JOIN users ON notebooks.user_id = users.id";
+$notebook_stmt = $conn->prepare($notebook_query);
+$notebook_stmt->execute();
+$notebooks = $notebook_stmt->get_result();
+$notebook_stmt->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -101,8 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_message_id'])) {
 </head>
 <body class="bg-white h-screen flex flex-col">
     <!-- Navbar -->
-    <nav class="navbar bg-secondary-100 text-white flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;
-}">
+    <nav class="navbar bg-secondary-100 text-white flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;}">
         <div class="flex items-center">
             <a href="indexTimeline.php"><img src="../public/ps.png" alt="Peerync Logo" class="h-16 w-16"></a>
             <span class="text-2xl font-bold">PeerSync</span>
@@ -274,52 +282,115 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_message_id'])) {
                 </div>
             </div>
 
-            <div id="notebook" class="hidden flex-grow flex flex-col">
-                <h2 class="text-2xl font-bold mb-4">Notebook</h2>
-                <p>This is the notebook section.</p>
-                <main class="flex-1 bg-gray-50">
-                    <div class="p-6">
-                        <div class="flex items-center justify-between mb-6">
-                            <button class="gap-2 bg-blue-500 text-white p-2 rounded">
-                                <i class="fas fa-plus h-4 w-4"></i>
-                                Create Notebook
-                            </button>
-                            <div class="relative max-w-sm">
-                                <i class="fas fa-search absolute left-2 top-2.5 h-4 w-4 text-gray-400"></i>
-                                <input type="text" placeholder="Search notebooks..." class="pl-8 p-2 border rounded w-full">
-                            </div>
-                        </div>
 
-                        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                            <?php foreach ($notebooks as $notebook): ?>
-                                <div class="group relative overflow-hidden transition-colors hover:bg-gray-50 p-4 bg-white rounded shadow">
-                                    <div class="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <h3 class="text-lg font-semibold"><?php echo htmlspecialchars($notebook['title']); ?></h3>
-                                        <div class="relative">
-                                            <button class="h-8 w-8 p-0 opacity-0 group-hover:opacity-100" aria-label="Open menu">
-                                                <i class="fas fa-ellipsis-h h-4 w-4"></i>
-                                            </button>
-                                            <div class="dropdown-menu absolute right-0 mt-2 w-32 bg-white border border-gray-300 rounded shadow-lg hidden">
-                                                <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Edit</a>
-                                                <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Share</a>
-                                                <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Delete</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p class="text-sm text-gray-500"><?php echo htmlspecialchars($notebook['description']); ?></p>
-                                    </div>
-                                    <div>
-                                        <a href="notebook.php?id=<?php echo $notebook['id']; ?>" class="text-sm text-blue-500 hover:underline">
-                                            View notebook
-                                        </a>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                </main>
+            <div id="notebook" class="hidden flex-grow flex flex-col">
+    <h2 class="text-2xl font-bold mb-4">Notebook</h2>
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold">Bubble Notebooks</h1>
+        <button class="bg-blue-500 text-white p-2 rounded">Share Your Notebook</button>
+    </div>
+
+    <!-- Search and Filter Bar -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+        <div class="relative flex-1">
+            <i class="fas fa-search absolute left-3 top-3 h-4 w-4 text-gray-400"></i>
+            <input type="text" placeholder="Search notebooks..." class="pl-10 w-full p-2 border rounded">
+        </div>
+        <select class="w-full sm:w-[180px] p-2 border rounded">
+            <option value="recent">Most Recent</option>
+            <option value="popular">Most Popular</option>
+            <option value="discussed">Most Discussed</option>
+        </select>
+    </div>
+
+    <!-- Bubble Stats -->
+    <div class="bg-white p-4 rounded shadow mb-8">
+        <div class="mb-4">
+            <h3 class="text-xl font-bold">Bubble Insights</h3>
+            <p class="text-gray-500">Explore our community's notebook activity</p>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="flex flex-col items-center">
+                <i class="fas fa-book-open h-8 w-8 text-blue-500 mb-2"></i>
+                <span class="text-2xl font-bold">156</span>
+                <span class="text-sm text-gray-500">Shared Notebooks</span>
             </div>
+            <div class="flex flex-col items-center">
+                <i class="fas fa-star h-8 w-8 text-blue-500 mb-2"></i>
+                <span class="text-2xl font-bold">42</span>
+                <span class="text-sm text-gray-500">Featured Notes</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <i class="fas fa-bookmark h-8 w-8 text-blue-500 mb-2"></i>
+                <span class="text-2xl font-bold">328</span>
+                <span class="text-sm text-gray-500">Bookmarks</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <i class="fas fa-users h-8 w-8 text-blue-500 mb-2"></i>
+                <span class="text-2xl font-bold">89%</span>
+                <span class="text-sm text-gray-500">Active Members</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notebook Grid -->
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">Recent Notebooks</h2>
+        <div class="flex gap-2">
+            <button class="border p-2 rounded" onclick="setView('grid')">Grid</button>
+            <button class="border p-2 rounded" onclick="setView('list')">List</button>
+        </div>
+    </div>
+
+    <div id="notebook-grid" class="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        <?php foreach ($notebooks as $notebook): ?>
+            <div class="bg-white p-4 rounded shadow group transition-all hover:shadow-lg">
+                <div class="flex items-center gap-4 mb-4">
+                    <img src="data:image/jpeg;base64,<?php echo base64_encode($notebook['profile_image']); ?>" alt="Profile Image" class="w-10 h-10 rounded-full">
+                    <div>
+                        <h3 class="text-lg font-bold"><?php echo htmlspecialchars($notebook['name']); ?></h3>
+                        <p class="text-gray-500">by <?php echo htmlspecialchars($notebook['username']); ?> • Updated <?php echo htmlspecialchars($notebook['updated_at']); ?></p>
+                    </div>
+                </div>
+                <p class="text-gray-500 mb-4"><?php echo htmlspecialchars($notebook['description']); ?></p>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <?php foreach ($notebook['tags'] as $tag): ?>
+                        <span class="bg-gray-200 text-gray-700 p-1 rounded"><?php echo htmlspecialchars($tag); ?></span>
+                    <?php endforeach; ?>
+                </div>
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-4 text-sm text-gray-500">
+                        <span class="flex items-center gap-1">
+                            <i class="fas fa-book-open h-4 w-4"></i>
+                            <?php echo htmlspecialchars($notebook['views']); ?> views
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <i class="fas fa-comments h-4 w-4"></i>
+                            <?php echo htmlspecialchars($notebook['comments']); ?> comments
+                        </span>
+                    </div>
+                    <button class="text-blue-500 flex items-center gap-1">
+                        <i class="fas fa-share h-4 w-4"></i>
+                        Share
+                    </button>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
+<script>
+    function setView(view) {
+        const notebookGrid = document.getElementById('notebook-grid');
+        if (view === 'grid') {
+            notebookGrid.classList.remove('grid-cols-1');
+            notebookGrid.classList.add('md:grid-cols-2', 'lg:grid-cols-3');
+        } else {
+            notebookGrid.classList.add('grid-cols-1');
+            notebookGrid.classList.remove('md:grid-cols-2', 'lg:grid-cols-3');
+        }
+    }
+</script>
 
             <div id="settings" class="hidden flex-grow flex flex-col">
                 <div class="tabs">
@@ -383,43 +454,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_message_id'])) {
             dropdownMenu.classList.toggle('hidden');
         });
 
-// Fetch the list of bubbles the user has joined
-function fetchJoinedBubbles() {
-    fetch("joinedBubble.php")
-    .then(response => response.json())
-    .then(data => {
-        const bubbleList = document.getElementById("bubble-list");
-        bubbleList.innerHTML = "";
-        data.bubbles.forEach(bubble => {
-            const bubbleItem = document.createElement("li");
-            bubbleItem.className = "bubble-container relative";
-            bubbleItem.innerHTML = `
-                <a href="bubblePage.php?bubble_id=${bubble.id}" class="block p-2 text-center transform hover:scale-105 transition-transform duration-200 relative">
-                    <img src="data:image/jpeg;base64,${bubble.profile_image}" alt="${bubble.bubble_name}" class="w-10 h-10 rounded-full mx-auto">
-                    <div class="bubble-name-modal absolute left-full top-1/2 transform -translate-y-1/2 ml-2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 transition-opacity duration-200">${bubble.bubble_name}</div>
-                </a>
-            `;
-            bubbleList.appendChild(bubbleItem);
-        });
+        // Fetch the list of bubbles the user has joined
+        function fetchJoinedBubbles() {
+            fetch("joinedBubble.php")
+            .then(response => response.json())
+            .then(data => {
+                const bubbleList = document.getElementById("bubble-list");
+                bubbleList.innerHTML = "";
+                data.bubbles.forEach(bubble => {
+                    const bubbleItem = document.createElement("li");
+                    bubbleItem.className = "bubble-container relative";
+                    bubbleItem.innerHTML = `
+                        <a href="bubblePage.php?bubble_id=${bubble.id}" class="block p-2 text-center transform hover:scale-105 transition-transform duration-200 relative">
+                            <img src="data:image/jpeg;base64,${bubble.profile_image}" alt="${bubble.bubble_name}" class="w-10 h-10 rounded-full mx-auto">
+                            <div class="bubble-name-modal absolute left-full top-1/2 transform -translate-y-1/2 ml-2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 transition-opacity duration-200">${bubble.bubble_name}</div>
+                        </a>
+                    `;
+                    bubbleList.appendChild(bubbleItem);
+                });
 
-        // Add event listeners to show/hide the modal on hover
-        document.querySelectorAll('.bubble-container a').forEach(anchor => {
-            anchor.addEventListener('mouseenter', function() {
-                const modal = this.querySelector('.bubble-name-modal');
-                modal.classList.remove('opacity-0');
-                modal.classList.add('opacity-100');
+                // Add event listeners to show/hide the modal on hover
+                document.querySelectorAll('.bubble-container a').forEach(anchor => {
+                    anchor.addEventListener('mouseenter', function() {
+                        const modal = this.querySelector('.bubble-name-modal');
+                        modal.classList.remove('opacity-0');
+                        modal.classList.add('opacity-100');
+                    });
+                    anchor.addEventListener('mouseleave', function() {
+                        const modal = this.querySelector('.bubble-name-modal');
+                        modal.classList.remove('opacity-100');
+                        modal.classList.add('opacity-0');
+                    });
+                });
+            })
+            .catch(error => {
+                console.error("Error fetching joined bubbles:", error);
             });
-            anchor.addEventListener('mouseleave', function() {
-                const modal = this.querySelector('.bubble-name-modal');
-                modal.classList.remove('opacity-100');
-                modal.classList.add('opacity-0');
-            });
-        });
-    })
-    .catch(error => {
-        console.error("Error fetching joined bubbles:", error);
-    });
-}
+        }
 
         // Fetch joined bubbles on page load
         document.addEventListener("DOMContentLoaded", fetchJoinedBubbles);
@@ -500,7 +571,5 @@ function fetchJoinedBubbles() {
             document.getElementById('edit-message-modal').classList.add('hidden');
         }
     </script>
-
-    
 </body>
 </html>

@@ -43,7 +43,6 @@ $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 $stmt->close();
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -212,6 +211,15 @@ $stmt->close();
                     $comment_result = $comment_stmt->get_result();
                     $comment_count = $comment_result->fetch_assoc()['comment_count'];
                     ?>
+                    <?php
+                    $like_query = "SELECT COUNT(*) AS like_count FROM post_likes WHERE post_id = ?";
+                    $like_stmt = $conn->prepare($like_query);
+                    $like_stmt->bind_param('i', $post['id']);
+                    $like_stmt->execute();
+                    $like_result = $like_stmt->get_result();
+                    $like_count = $like_result->fetch_assoc()['like_count'];
+                    $like_stmt->close();                   
+                    ?>
                     <div class="bg-white p-4 shadow rounded mb-4">
                         <div class="flex items-center mb-4">
                             <img src="<?= htmlspecialchars($post['profile_image']) ?>" alt="Profile Image" class="w-10 h-10 rounded-full mr-3">
@@ -229,10 +237,36 @@ $stmt->close();
                         </a>
                         <div class="flex items-center justify-between text-gray-500 text-sm">
                             <div class="flex justify-between w-full">
-                                <button class="flex items-center space-x-1">
-                                    <i class="fas fa-thumbs-up"></i>
-                                    <span>Like</span>
-                                </button>
+                                <form action="indexTimeline.php" method="POST" class="flex items-center space-x-1">
+                                    <input type="hidden" name="like_post_id" value="<?= $post['id'] ?>">
+ <!-- Like Button -->
+ <button type="button" id="like-button-<?= $post['id'] ?>" class="like-button flex items-center space-x-1 <?= $user_like ? 'text-blue-500' : '' ?>" data-post-id="<?= $post['id'] ?>">
+    <i class="fas fa-thumbs-up"></i>
+    <span>Like (<span id="like-count-<?= $post['id'] ?>"><?= $like_count ?></span>)</span>
+</button>
+
+<!-- Include jQuery for simplicity -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('.like-button').on('click', function() {
+        var postId = $(this).data('post-id');
+        var likeButton = $(this);
+        $.ajax({
+            url: 'likePost.php',
+            type: 'POST',
+            data: { like_post_id: postId },
+            success: function(response) {
+                // Update the like count dynamically
+                $('#like-count-' + postId).text(response.new_like_count);        },
+            error: function(xhr, status, error) {
+                console.error('Error liking post:', error);
+            }
+        });
+    });
+});
+</script>
+                                </form>
                                 <button class="flex items-center space-x-1">
                                     <i class="fas fa-comment"></i>
                                     <span>Comment (<?= $comment_count ?>)</span>
@@ -274,7 +308,7 @@ $stmt->close();
         <div>
             <h2 class="text-xl font-semibold mb-2">PeerSync Premium</h2>
             <p class="text-sm text-gray-600 mb-4">Unlock exclusive features and content with PeerSync Premium.</p>
-            <a href="TP.html" class="block w-full py-2 bg-yellow-500 text-white text-center rounded hover:bg-yellow-600 transition duration-300">Learn More</a>
+            <a href="sub.html" target="_blank" class="block w-full py-2 bg-yellow-500 text-white text-center rounded hover:bg-yellow-600 transition duration-300">Learn More</a>
         </div>
         </div>
     </aside>

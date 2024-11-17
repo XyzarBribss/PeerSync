@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
     <link rel="stylesheet" href="style.css">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://cdn.tiny.cloud/1/9ai4ffzegkn572ycqvbetrnlp87ikc35prqpzfnpafymqzfe/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.tiny.cloud/1/ktteph1j9d5pdmrriiab0cd8mp2dv4z8uivksj6ya0or7ty5/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <style>
     .dropdown:hover .dropdown-menu { display: block; }
@@ -289,7 +289,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
     <script>
     // Initialize TinyMCE
     tinymce.init({
-        selector: '#noteContent, #noteDetailsContent',
+        selector: '#noteContent, #noteDetailsContent', height: 700, menubar: false,
         plugins: [
             'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
             'checklist', 'mediaembed', 'casechange', 'export', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'editimage', 'advtemplate', 'ai', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown',

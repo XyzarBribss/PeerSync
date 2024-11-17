@@ -4,7 +4,7 @@ include 'config.php'; // Ensure this file correctly sets up the $conn variable
 
 // Check if the post_id is provided
 if (!isset($_GET['post_id'])) {
-    echo "Post ID not provided.";
+    echo json_encode(['error' => 'Post ID not provided.']);
     exit();
 }
 
@@ -34,7 +34,6 @@ $stmt->execute();
 $result = $stmt->get_result();
 $post = $result->fetch_assoc();
 $stmt->close();
-
 
 // Convert the image to base64 if it exists
 $image_base64 = '';
@@ -94,21 +93,11 @@ if (isset($_POST['delete_post_id'])) {
         $stmt->execute();
         $stmt->close();
 
-        // Determine the previous URL
-        $previous_url = $_SERVER['HTTP_REFERER'];
-
-        // Redirect based on the previous URL
-        if (strpos($previous_url, 'indexTimeline.php') !== false) {
-            header("Location: indexTimeline.php");
-        } elseif (strpos($previous_url, 'bubblePage.php') !== false) {
-            header("Location: bubblePage.php?bubble_id=" . $post['bubble_id']);
-        } else {
-            header("Location: indexTimeline.php"); // Default redirection
-        }
-        exit();
-        } else {
-        echo "You do not have permission to delete this post.";
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['error' => 'You do not have permission to delete this post.']);
     }
+    exit();
 }
 
 // Handle post update
@@ -143,45 +132,10 @@ if (isset($_POST['update_post_id'])) {
         $stmt->execute();
         $stmt->close();
 
-        // Redirect to the post details page
-        header("Location: postDetails.php?post_id=" . $update_post_id);
-        exit();
+        echo json_encode(['success' => true]);
     } else {
-        echo "You do not have permission to update this post.";
+        echo json_encode(['error' => 'You do not have permission to update this post.']);
     }
-}
-
-// Handle like and unlike actions
-if (isset($_POST['like_post_id'])) {
-    $like_post_id = $_POST['like_post_id'];
-
-    // Check if the user has already liked the post
-    $query = "SELECT * FROM post_likes WHERE post_id = ? AND user_id = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param('ii', $like_post_id, $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $like = $result->fetch_assoc();
-    $stmt->close();
-
-    if ($like) {
-        // Unlike the post
-        $query = "DELETE FROM post_likes WHERE post_id = ? AND user_id = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param('ii', $like_post_id, $user_id);
-        $stmt->execute();
-        $stmt->close();
-    } else {
-        // Like the post
-        $query = "INSERT INTO post_likes (post_id, user_id) VALUES (?, ?)";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param('ii', $like_post_id, $user_id);
-        $stmt->execute();
-        $stmt->close();
-    }
-
-    // Redirect to the post details page
-    header("Location: postDetails.php?post_id=" . $like_post_id);
     exit();
 }
 
@@ -194,6 +148,7 @@ $like_result = $like_stmt->get_result();
 $like_count = $like_result->fetch_assoc()['like_count'];
 $like_stmt->close();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -288,10 +243,33 @@ $like_stmt->close();
                         <div class="flex justify-between w-full">
                         <form action="postDetails.php?post_id=<?= htmlspecialchars($post_id) ?>" method="post">
                                 <input type="hidden" name="like_post_id" value="<?= htmlspecialchars($post_id) ?>">
-                                <button type="submit" class="flex items-center space-x-1">
-                                    <i class="fas fa-thumbs-up"></i>
-                                    <span>Like (<?= $like_count ?>)</span>
-                                </button>
+ <!-- Like Button -->
+ <button type="button" id="like-button-<?= $post['id'] ?>" class="like-button flex items-center space-x-1 <?= $user_like ? 'text-blue-500' : '' ?>" data-post-id="<?= $post['id'] ?>">
+    <i class="fas fa-thumbs-up"></i>
+    <span>Like (<span id="like-count-<?= $post['id'] ?>"><?= $like_count ?></span>)</span>
+</button>
+
+<!-- Include jQuery for simplicity -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('.like-button').on('click', function() {
+        var postId = $(this).data('post-id');
+        var likeButton = $(this);
+        $.ajax({
+            url: 'likePost.php',
+            type: 'POST',
+            data: { like_post_id: postId },
+            success: function(response) {
+                // Update the like count dynamically
+                $('#like-count-' + postId).text(response.new_like_count);        },
+            error: function(xhr, status, error) {
+                console.error('Error liking post:', error);
+            }
+        });
+    });
+});
+</script>
                             </form>
                             <button class="flex items-center space-x-1">
                                 <i class="fas fa-comment"></i>
