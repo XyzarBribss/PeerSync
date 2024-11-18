@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Timeline Reports | PeerSync Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" type="text/css" href="vendors/bootstrap/css/bootstrap-4.3.1/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="assets/css/simple-custom.css">
+    <link rel="stylesheet" type="text/css" href="vendors/icon/mdi/css/materialdesignicons.min.css">
+    <script src="vendors/jquery/jquery-3.3.1.min.js"></script>
+    <script src="vendors/bootstrap/js/bootstrap-4.3.1/bootstrap.min.js"></script>
+    <style>
+        .status-badge {
+            padding: 0.35rem 0.65rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .status-pending {
+            background-color: #ffeeba;
+            color: #856404;
+        }
+        .status-resolved {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-dismissed {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .action-buttons .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        .filters-row {
+            background-color: #f8f9fa;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .table th {
+            border-top: none;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2">
+                <div class="col-md-2 sidebar">
+                    <div class="brand">
+                        <a href="#" class="brand-name">PeerSync Admin</a>
+                    </div>
+                    <div class="sidebar-sticky">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a href="dashboard.html" class="nav-link">
+                                    <i class="mdi mdi-monitor"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link collapsed" data-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
+                                    <i class="mdi mdi-shape-outline"></i> Management 
+                                    <span class="badge badge-info">New</span>
+                                    <i class="mdi mdi-chevron-down float-right pr-2"></i>
+                                </a>
+                                <div class="collapse" id="collapseExample">
+                                    <a class="nav-link active" href="index_timeline_reports.html"><i class="mdi mdi-circle-medium"></i> Timeline Reports</a>
+                                    <a class="nav-link" href="view_users.html"><i class="mdi mdi-circle-medium"></i> View Users</a>
+                                    <a class="nav-link" href="View_Bubbles.html"><i class="mdi mdi-circle-medium"></i> Bubbles</a>
+                                    <a class="nav-link" href="admin_messages.html"><i class="mdi mdi-circle-medium"></i> Messages</a>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="nav-bottom">
+                        <ul class="nav">
+                            <li class="nav-item">
+                                <a href="#" class="nav-link"><i class="mdi mdi-account"></i></a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../indexLogin.php" class="nav-link"><i class="mdi mdi-power"></i></a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <main role="main" class="col-md-10 ml-sm-auto px-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Timeline Reports Management</h1>
+                </div>
+
+                <!-- Filters Section -->
+                <div class="filter-section mb-4">
+                    <div class="row align-items-end">
+                        <div class="col-md-3">
+                            <div class="form-group mb-0">
+                                <label for="statusFilter">Status</label>
+                                <select class="form-control" id="statusFilter">
+                                    <option value="all">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="resolved">Resolved</option>
+                                    <option value="dismissed">Dismissed</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-0">
+                                <label for="searchInput">Search</label>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Search by username, content, or report ID...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports Table -->
+                <div class="card">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Reporter</th>
+                                        <th>Reported User</th>
+                                        <th>Content</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportsTableBody">
+                                    <!-- Example row -->
+                                    <tr>
+                                        <td>#12345</td>
+                                        <td>john_doe</td>
+                                        <td>jane_smith</td>
+                                        <td class="report-content">This is the content of the reported post...</td>
+                                        <td>2024-01-20</td>
+                                        <td><span class="status-badge status-pending">Pending</span></td>
+                                        <td class="report-actions">
+                                            <button class="btn btn-sm btn-outline-success" onclick="updateStatus(12345, 'resolved')" title="Resolve">
+                                                <i class="mdi mdi-check"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="updateStatus(12345, 'dismissed')" title="Dismiss">
+                                                <i class="mdi mdi-close"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deletePost(12345)" title="Delete Post">
+                                                <i class="mdi mdi-delete"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <nav aria-label="Reports pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1">Previous</a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        $(document).ready(function() {
+            // Initialize Bootstrap components
+            $('[data-toggle="tooltip"]').tooltip();
+            
+            // Handle Management menu collapse/expand
+            $('.nav-link[data-toggle="collapse"]').on('click', function() {
+                $(this).toggleClass('collapsed');
+                var expanded = $(this).attr('aria-expanded') === 'true';
+                $(this).attr('aria-expanded', !expanded);
+            });
+
+            // Auto expand Management menu if it contains active link
+            if ($('#collapseExample .nav-link.active').length) {
+                var managementLink = $('.nav-link[data-toggle="collapse"]');
+                managementLink.removeClass('collapsed');
+                managementLink.attr('aria-expanded', 'true');
+                $('#collapseExample').addClass('show');
+            }
+
+            // Handle status filter changes
+            $('#statusFilter').change(function() {
+                filterReports();
+            });
+
+            // Handle search input
+            $('#searchInput').on('keyup', function() {
+                filterReports();
+            });
+
+            function filterReports() {
+                var status = $('#statusFilter').val().toLowerCase();
+                var search = $('#searchInput').val().toLowerCase();
+
+                $('.report-row').each(function() {
+                    var row = $(this);
+                    var rowStatus = row.find('.status-badge').text().toLowerCase();
+                    var rowText = row.text().toLowerCase();
+                    
+                    var statusMatch = status === 'all' || rowStatus.includes(status);
+                    var searchMatch = search === '' || rowText.includes(search);
+                    
+                    if (statusMatch && searchMatch) {
+                        row.show();
+                    } else {
+                        row.hide();
+                    }
+                });
+            }
+
+            // Handle report actions
+            $('.btn-resolve').click(function() {
+                var reportId = $(this).data('report-id');
+                updateReportStatus(reportId, 'resolved');
+            });
+
+            $('.btn-dismiss').click(function() {
+                var reportId = $(this).data('report-id');
+                updateReportStatus(reportId, 'dismissed');
+            });
+
+            $('.btn-delete-post').click(function() {
+                var postId = $(this).data('post-id');
+                if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+                    deletePost(postId);
+                }
+            });
+
+            function updateReportStatus(reportId, status) {
+                // TODO: Implement AJAX call to update report status
+                $.ajax({
+                    url: 'update_report_status.php',
+                    type: 'POST',
+                    data: {
+                        report_id: reportId,
+                        status: status
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Refresh the table or update the status visually
+                            location.reload();
+                        } else {
+                            alert('Error updating report status: ' + response.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error:', error);
+                        alert('Error updating report status');
+                    }
+                });
+            }
+
+            function deletePost(postId) {
+                $.ajax({
+                    url: 'delete_post.php',
+                    type: 'POST',
+                    data: {
+                        post_id: postId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Refresh the table
+                            location.reload();
+                        } else {
+                            alert('Error deleting post: ' + response.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error:', error);
+                        alert('Error deleting post');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

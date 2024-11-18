@@ -3,7 +3,6 @@ session_start();
 require 'config.php';
 
 $logged_in_user_id = $_SESSION['user_id'];
-
 // Fetch posts from bubbles the user has joined
 $query = "
     SELECT bp.*, u.username, u.profile_image, b.bubble_name AS bubble_name
@@ -126,6 +125,34 @@ $stmt->close();
         .next-button:hover {
             background-color: #3a6d96;
         }
+        
+        /* Like button styles */
+        .like-button {
+            transition: all 0.3s ease;
+            color: #6B7280; /* Default gray color */
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .like-button.liked {
+            color: #2563EB; /* Blue color when liked */
+            background-color: rgba(37, 99, 235, 0.1);
+        }
+        
+        .like-button:hover {
+            background-color: rgba(37, 99, 235, 0.05);
+        }
+        
+        .like-button i {
+            transition: transform 0.2s ease;
+        }
+        
+        .like-button.liked i {
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body class="bg-blue-50">
@@ -220,6 +247,25 @@ $stmt->close();
                     $like_count = $like_result->fetch_assoc()['like_count'];
                     $like_stmt->close();                   
                     ?>
+                    <?php
+                    // Check if user has liked this post
+                    $like_query = "SELECT COUNT(*) as liked FROM post_likes WHERE post_id = ? AND user_id = ?";
+                    $like_stmt = $conn->prepare($like_query);
+                    $like_stmt->bind_param("ii", $post['id'], $logged_in_user_id);
+                    $like_stmt->execute();
+                    $like_result = $like_stmt->get_result();
+                    $user_like = $like_result->fetch_assoc()['liked'] > 0;
+                    $like_stmt->close();
+
+                    // Get total like count
+                    $count_query = "SELECT COUNT(*) as count FROM post_likes WHERE post_id = ?";
+                    $count_stmt = $conn->prepare($count_query);
+                    $count_stmt->bind_param("i", $post['id']);
+                    $count_stmt->execute();
+                    $count_result = $count_stmt->get_result();
+                    $like_count = $count_result->fetch_assoc()['count'];
+                    $count_stmt->close();
+                    ?>
                     <div class="bg-white p-4 shadow rounded mb-4">
                         <div class="flex items-center mb-4">
                             <img src="<?= htmlspecialchars($post['profile_image']) ?>" alt="Profile Image" class="w-10 h-10 rounded-full mr-3">
@@ -237,36 +283,13 @@ $stmt->close();
                         </a>
                         <div class="flex items-center justify-between text-gray-500 text-sm">
                             <div class="flex justify-between w-full">
-                                <form action="indexTimeline.php" method="POST" class="flex items-center space-x-1">
-                                    <input type="hidden" name="like_post_id" value="<?= $post['id'] ?>">
- <!-- Like Button -->
- <button type="button" id="like-button-<?= $post['id'] ?>" class="like-button flex items-center space-x-1 <?= $user_like ? 'text-blue-500' : '' ?>" data-post-id="<?= $post['id'] ?>">
-    <i class="fas fa-thumbs-up"></i>
-    <span>Like (<span id="like-count-<?= $post['id'] ?>"><?= $like_count ?></span>)</span>
-</button>
-
-<!-- Include jQuery for simplicity -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-$(document).ready(function() {
-    $('.like-button').on('click', function() {
-        var postId = $(this).data('post-id');
-        var likeButton = $(this);
-        $.ajax({
-            url: 'likePost.php',
-            type: 'POST',
-            data: { like_post_id: postId },
-            success: function(response) {
-                // Update the like count dynamically
-                $('#like-count-' + postId).text(response.new_like_count);        },
-            error: function(xhr, status, error) {
-                console.error('Error liking post:', error);
-            }
-        });
-    });
-});
-</script>
-                                </form>
+                                <button type="button" 
+                                        id="like-button-<?= $post['id'] ?>" 
+                                        class="like-button <?= $user_like ? 'liked' : '' ?>" 
+                                        data-post-id="<?= $post['id'] ?>">
+                                    <i class="fas fa-thumbs-up"></i>
+                                    <span>Like (<span id="like-count-<?= $post['id'] ?>"><?= $like_count ?></span>)</span>
+                                </button>
                                 <button class="flex items-center space-x-1">
                                     <i class="fas fa-comment"></i>
                                     <span>Comment (<?= $comment_count ?>)</span>
@@ -568,6 +591,36 @@ function fetchJoinedBubbles() {
 }
 
 document.addEventListener("DOMContentLoaded", fetchJoinedBubbles);
+    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('.like-button').click(function() {
+            const button = $(this);
+            const postId = button.data('post-id');
+            
+            $.ajax({
+                url: 'toggle_like.php',
+                type: 'POST',
+                data: { post_id: postId },
+                success: function(response) {
+                    const data = JSON.parse(response);
+                    if (data.success) {
+                        button.toggleClass('liked');
+                        $('#like-count-' + postId).text(data.likes);
+                        
+                        // Add a small animation when liking
+                        if (button.hasClass('liked')) {
+                            button.find('i').addClass('animate-bounce');
+                            setTimeout(() => {
+                                button.find('i').removeClass('animate-bounce');
+                            }, 1000);
+                        }
+                    }
+                }
+            });
+        });
+    });
     </script>
 </body>
 </html>
