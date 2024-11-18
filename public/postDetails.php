@@ -93,7 +93,7 @@ if (isset($_POST['delete_post_id'])) {
         $stmt->execute();
         $stmt->close();
 
-        echo json_encode(['success' => true]);
+        header('Location: indexTimeline.php');
     } else {
         echo json_encode(['error' => 'You do not have permission to delete this post.']);
     }
@@ -295,6 +295,30 @@ $(document).ready(function() {
                         </form>
                     </div>
                 </div>
+                <script>
+                $(document).ready(function() {
+                    $('form[action="postComment.php"]').on('submit', function(event) {
+                        event.preventDefault();
+                        var form = $(this);
+                        var formData = form.serialize();
+
+                        $.ajax({
+                            url: 'postComment.php',
+                            type: 'POST',
+                            data: formData,
+                            success: function(response) {
+                                // Assuming the response contains the new comment HTML
+                                var newComment = $(response);
+                                form.closest('.bg-white').next('.bg-white').append(newComment);
+                                form.find('textarea[name="comment"]').val(''); // Clear the textarea
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('Error posting comment:', error);
+                            }
+                        });
+                    });
+                });
+                </script>
 
                 <!-- Display comments -->
                 <div class="bg-white p-4 shadow rounded mb-4">
@@ -333,7 +357,7 @@ $(document).ready(function() {
                                         </div>
                                     <?php endforeach; ?>
                                     <!-- Reply form -->
-                                    <form action="postComment.php" method="post" class="mt-2">
+                                    <form action="postComment.php" method="post" class="mt-2 reply-form">
                                         <textarea name="comment" class="w-full p-2 border rounded" rows="2" placeholder="Reply to this comment"></textarea>
                                         <input type="hidden" name="post_id" value="<?= htmlspecialchars($post_id) ?>">
                                         <input type="hidden" name="bubble_id" value="<?= htmlspecialchars($post['bubble_id']) ?>">
@@ -345,6 +369,31 @@ $(document).ready(function() {
                         <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
+
+                <script>
+                $(document).ready(function() {
+                    $('.reply-form').on('submit', function(event) {
+                        event.preventDefault();
+                        var form = $(this);
+                        var formData = form.serialize();
+
+                        $.ajax({
+                            url: 'postComment.php',
+                            type: 'POST',
+                            data: formData,
+                            success: function(response) {
+                                // Assuming the response contains the new reply HTML
+                                var newReply = $(response);
+                                form.closest('.bg-gray-100').find('.ml-4').append(newReply);
+                                form.find('textarea[name="comment"]').val(''); // Clear the textarea
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('Error posting reply:', error);
+                            }
+                        });
+                    });
+                });
+                </script>
             </div>
         </div>
     </div>
