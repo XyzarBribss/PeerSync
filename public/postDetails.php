@@ -68,6 +68,29 @@ $comment_result = $comment_stmt->get_result();
 $comment_count = $comment_result->fetch_assoc()['comment_count']; // Close the statement
 $stmt->close();
 
+// Fetch bubble membership status
+$is_member = false;
+$membership_query = "SELECT user_id FROM user_bubble WHERE user_id = ? AND bubble_id = ?";
+$stmt = $conn->prepare($membership_query);
+$stmt->bind_param('ii', $user_id, $post['bubble_id']);
+$stmt->execute();
+$result = $stmt->get_result();
+$is_member = $result->num_rows > 0;
+$stmt->close();
+
+// Fetch bubble statistics
+$stats_query = "
+    SELECT 
+        (SELECT COUNT(*) FROM bubble_posts WHERE bubble_id = ?) as total_posts,
+        (SELECT COUNT(*) FROM user_bubble WHERE bubble_id = ?) as total_members
+";
+$stmt = $conn->prepare($stats_query);
+$stmt->bind_param('ii', $post['bubble_id'], $post['bubble_id']);
+$stmt->execute();
+$result = $stmt->get_result();
+$bubble_stats = $result->fetch_assoc();
+$stmt->close();
+
 // Handle post deletion
 if (isset($_POST['delete_post_id'])) {
     $delete_post_id = $_POST['delete_post_id']; // Check if the user is the owner of the post
@@ -139,8 +162,38 @@ $like_stmt->execute();
 $like_result = $like_stmt->get_result();
 $like_count = $like_result->fetch_assoc()['like_count'];
 $like_stmt->close();
-?>
 
+// Add JavaScript functions for bubble actions
+$js_functions = "
+<script>
+function createPost() {
+    window.location.href = 'createPost.php?bubble_id=" . $post['bubble_id'] . "';
+}
+
+function joinBubble() {
+    fetch('joinBubble.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            bubble_id: " . $post['bubble_id'] . "
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+</script>
+";
+
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -160,6 +213,7 @@ $like_stmt->close();
         .content { margin-top: 64px; margin-left: 80px; transition: margin-left 0.3s; }
         .right-sidebar { position: fixed; right: 0; height: calc(100% - 64px); overflow-y: auto; z-index: 100; margin-top: 80px; }
     </style>
+    <?= $js_functions ?>
 </head>
 <body class="bg-blue-50">
     <!-- Navbar -->
@@ -231,48 +285,118 @@ $like_stmt->close();
                             <img src="<?= $image_base64 ?>" alt="Post Image" class="w-full h-auto rounded mb-4">
                         <?php endif; ?>
                     </a>
-                    <div class="flex items-center justify-between text-gray-500 text-sm">
-                        <div class="flex justify-between w-full">
-                        <form action="postDetails.php?post_id=<?= htmlspecialchars($post_id) ?>" method="post">
-                                <input type="hidden" name="like_post_id" value="<?= htmlspecialchars($post_id) ?>">
- <!-- Like Button -->
- <button type="button" id="like-button-<?= $post['id'] ?>" class="like-button flex items-center space-x-1 <?= $user_like ? 'text-blue-500' : '' ?>" data-post-id="<?= $post['id'] ?>">
-    <i class="fas fa-thumbs-up"></i>
-    <span>Like (<span id="like-count-<?= $post['id'] ?>"><?= $like_count ?></span>)</span>
-</button>
-
-<!-- Include jQuery for simplicity -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-$(document).ready(function() {
-    $('.like-button').on('click', function() {
-        var postId = $(this).data('post-id');
-        var likeButton = $(this);
-        $.ajax({
-            url: 'likePost.php',
-            type: 'POST',
-            data: { like_post_id: postId },
-            success: function(response) {
-                // Update the like count dynamically
-                $('#like-count-' + postId).text(response.new_like_count);        },
-            error: function(xhr, status, error) {
-                console.error('Error liking post:', error);
-            }
-        });
-    });
-});
-</script>
-                            </form>
-                            <button class="flex items-center space-x-1">
-                                <i class="fas fa-comment"></i>
-                                <span>Comment (<?= $comment_count ?>)</span>
+                    <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                        <div class="flex items-center space-x-6">
+                            <!-- Like Button -->
+                            <button type="button" 
+                                    id="like-button-<?= $post['id'] ?>" 
+                                    class="like-button <?= $user_like ? 'liked' : '' ?>" 
+                                    data-post-id="<?= $post['id'] ?>">
+                                <i class="fas fa-thumbs-up"></i>
+                                <span class="text-sm">
+                                    <?= $like_count ?> <?= $like_count === 1 ? 'Like' : 'Likes' ?>
+                                </span>
                             </button>
-                            <button class="flex items-center space-x-1">
-                                <i class="fas fa-flag"></i>
-                                <span>Report</span>
+
+                            <!-- Comment Button -->
+                            <button class="flex items-center space-x-2 text-gray-500 hover:text-sky-500 transition-colors">
+                                <i class="fas fa-comment"></i>
+                                <span class="text-sm">
+                                    <?= $comment_count ?> <?= $comment_count === 1 ? 'Comment' : 'Comments' ?>
+                                </span>
+                            </button>
+
+                            <!-- Share Button -->
+                            <button class="flex items-center space-x-2 text-gray-500 hover:text-sky-500 transition-colors">
+                                <i class="fas fa-share"></i>
+                                <span class="text-sm">Share</span>
                             </button>
                         </div>
+
+                        <!-- Report Button -->
+                        <button onclick="openReportModal()" 
+                                class="flex items-center space-x-2 text-gray-400 hover:text-red-500 transition-colors text-sm">
+                            <i class="fas fa-flag"></i>
+                            <span>Report</span>
+                        </button>
                     </div>
+                    <style>
+                        /* Like button styles */
+                        .like-button {
+                            transition: all 0.3s ease;
+                            padding: 0.5rem 1rem;
+                            border-radius: 0.375rem;
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 0.5rem;
+                        }
+                        
+                        .like-button.liked {
+                            color: rgb(43, 84, 126);
+                            font-weight: 600;
+                            background-color: rgba(43, 84, 126, 0.1);
+                        }
+                        
+                        .like-button:hover {
+                            color: rgb(70, 130, 180);
+                            background-color: rgba(70, 130, 180, 0.1);
+                        }
+                        
+                        .like-button i {
+                            transition: transform 0.2s ease;
+                        }
+                        
+                        .like-button.liked i {
+                            transform: scale(1.1);
+                            color: rgb(43, 84, 126);
+                        }
+
+                        .like-button:not(.liked) {
+                            color: #6B7280;
+                        }
+                    </style>
+
+                    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                    <script>
+                    $(document).ready(function() {
+                        $('.like-button').click(function() {
+                            const button = $(this);
+                            const postId = button.data('post-id');
+                            
+                            $.ajax({
+                                url: 'toggle_like.php',
+                                type: 'POST',
+                                data: { post_id: postId },
+                                success: function(response) {
+                                    try {
+                                        const data = JSON.parse(response);
+                                        if (data.success) {
+                                            // Toggle the liked state
+                                            button.toggleClass('liked');
+                                            
+                                            // Update the like count text
+                                            const likeCountText = data.likes === 1 ? '1 Like' : data.likes + ' Likes';
+                                            button.find('span').text(likeCountText);
+                                            
+                                            // Add animation effect
+                                            button.find('i').addClass('animate-bounce');
+                                            setTimeout(() => {
+                                                button.find('i').removeClass('animate-bounce');
+                                            }, 1000);
+                                        } else {
+                                            console.error('Like toggle failed:', data.message);
+                                        }
+                                    } catch (e) {
+                                        console.error('Error parsing response:', e);
+                                    }
+                                },
+                                error: function(xhr, status, error) {
+                                    console.error('Ajax request failed:', error);
+                                }
+                            });
+                        });
+                    });
+                    </script>
                 </div>
 
 
@@ -605,21 +729,79 @@ function toggleReplies(commentId) {
             </div>
 
             <!-- About Bubble Section -->
-            <aside class="w-64 bg-white p-4 overflow-auto fixed right-0 top-16 h-full shadow-lg">
+            <aside class="w-64 bg-white p-6 overflow-auto fixed right-0 top-16 h-full shadow-lg border-l border-gray-100">
                 <div class="space-y-6">
-                    <div>
-                        <h2 class="text-xl font-semibold mb-2">About Bubble</h2>
+                    <!-- Bubble Header -->
+                    <div class="border-b border-gray-100 pb-4">
+                        <h2 class="text-xl font-semibold mb-4 text-[rgb(43,84,126)]">About Bubble</h2>
                         <div class="flex items-center mb-4">
                             <?php if (!empty($profile_image_base64)): ?>
-                                <img src="<?= $profile_image_base64 ?>" alt="<?= htmlspecialchars($post['bubble_name']) ?>" class="w-10 h-10 rounded-full mr-2">
+                                <img src="<?= $profile_image_base64 ?>" alt="<?= htmlspecialchars($post['bubble_name']) ?>" 
+                                     class="w-12 h-12 rounded-full mr-3 border-2 border-[rgb(70,130,180)]">
                             <?php else: ?>
-                                <img src="default-profile.png" alt="Default Profile Image" class="w-10 h-10 rounded-full mr-2">
+                                <img src="default-profile.png" alt="Default Profile Image" 
+                                     class="w-12 h-12 rounded-full mr-3 border-2 border-[rgb(70,130,180)]">
                             <?php endif; ?>
-                            <span class="font-bold"><?= htmlspecialchars($post['bubble_name']) ?></span>
+                            <div>
+                                <h3 class="font-bold text-gray-800"><?= htmlspecialchars($post['bubble_name']) ?></h3>
+                                <p class="text-xs text-gray-500">Created <?= date('M d, Y', strtotime($post['bubble_created_at'])) ?></p>
+                            </div>
                         </div>
-                        <p class="text-sm mb-4"><?= htmlspecialchars($post['bubble_description']) ?></p>
-                        <p class="text-xs text-gray-500">Created: <?= htmlspecialchars($post['bubble_created_at']) ?></p>
-                        <button class="mt-4 w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Create Post</button>
+                        <p class="text-sm text-gray-600 leading-relaxed mb-4"><?= htmlspecialchars($post['bubble_description']) ?></p>
+                    </div>
+
+                    <!-- Bubble Stats -->
+                    <div class="py-4 border-b border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Bubble Stats</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="text-center">
+                                <span class="block text-lg font-bold text-[rgb(43,84,126)]">
+                                    <?= number_format($bubble_stats['total_posts'] ?? 0) ?>
+                                </span>
+                                <span class="text-xs text-gray-500">Posts</span>
+                            </div>
+                            <div class="text-center">
+                                <span class="block text-lg font-bold text-[rgb(43,84,126)]">
+                                    <?= number_format($bubble_stats['total_members'] ?? 0) ?>
+                                </span>
+                                <span class="text-xs text-gray-500">Members</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="space-y-3">
+                        <button onclick="createPost()" 
+                                class="w-full bg-[rgb(70,130,180)] text-white px-4 py-2.5 rounded-lg hover:bg-[rgb(43,84,126)] transition-colors duration-300 flex items-center justify-center gap-2">
+                            <i class="fas fa-plus-circle"></i>
+                            Create Post
+                        </button>
+                        <?php if (!$is_member): ?>
+                            <button onclick="joinBubble()" 
+                                    class="w-full border-2 border-[rgb(70,130,180)] text-[rgb(70,130,180)] px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors duration-300 flex items-center justify-center gap-2">
+                                <i class="fas fa-user-plus"></i>
+                                Join Bubble
+                            </button>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Bubble Rules -->
+                    <div class="py-4">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Bubble Rules</h3>
+                        <ul class="space-y-2 text-sm text-gray-600">
+                            <li class="flex items-center gap-2">
+                                <i class="fas fa-check text-[rgb(70,130,180)]"></i>
+                                Be respectful and kind
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i class="fas fa-check text-[rgb(70,130,180)]"></i>
+                                Stay on topic
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i class="fas fa-check text-[rgb(70,130,180)]"></i>
+                                No spam or self-promotion
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </aside>

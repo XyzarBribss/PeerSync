@@ -129,7 +129,6 @@ $stmt->close();
         /* Like button styles */
         .like-button {
             transition: all 0.3s ease;
-            color: #6B7280; /* Default gray color */
             padding: 0.5rem 1rem;
             border-radius: 0.375rem;
             display: inline-flex;
@@ -138,12 +137,14 @@ $stmt->close();
         }
         
         .like-button.liked {
-            color: #2563EB; /* Blue color when liked */
-            background-color: rgba(37, 99, 235, 0.1);
+            color: rgb(43, 84, 126);
+            font-weight: 600;
+            background-color: rgba(43, 84, 126, 0.1);
         }
         
         .like-button:hover {
-            background-color: rgba(37, 99, 235, 0.05);
+            color: rgb(70, 130, 180);
+            background-color: rgba(70, 130, 180, 0.1);
         }
         
         .like-button i {
@@ -152,6 +153,11 @@ $stmt->close();
         
         .like-button.liked i {
             transform: scale(1.1);
+            color: rgb(43, 84, 126);
+        }
+
+        .like-button:not(.liked) {
+            color: #6B7280;
         }
     </style>
 </head>
@@ -266,35 +272,80 @@ $stmt->close();
                     $like_count = $count_result->fetch_assoc()['count'];
                     $count_stmt->close();
                     ?>
-                    <div class="bg-white p-4 shadow rounded mb-4">
-                        <div class="flex items-center mb-4">
-                            <img src="<?= htmlspecialchars($post['profile_image']) ?>" alt="Profile Image" class="w-10 h-10 rounded-full mr-3">
-                            <div>
-                                <div class="text-gray-700 font-bold"><?= htmlspecialchars($post['username']) ?></div>
-                                <div class="text-gray-500 text-sm"><?= htmlspecialchars($post['bubble_name']) ?> • <?= date('F j, Y, g:i a', strtotime($post['created_at'])) ?></div>
+                    <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden mb-8">
+                        <!-- Post Header -->
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <img src="<?= htmlspecialchars($post['profile_image']) ?>" 
+                                        alt="Profile Image" 
+                                        class="w-12 h-12 rounded-full border-2 border-gray-100 shadow-sm">
+                                    <div>
+                                        <div class="font-semibold text-gray-800"><?= htmlspecialchars($post['username']) ?></div>
+                                        <div class="flex items-center text-sm text-gray-500 space-x-2">
+                                            <span class="bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                                                <?= htmlspecialchars($post['bubble_name']) ?>
+                                            </span>
+                                            <span>•</span>
+                                            <span><?= date('M j, Y \a\t g:i a', strtotime($post['created_at'])) ?></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
                             </div>
-                        </div>
-                        <a href="postDetails.php?post_id=<?= $post['id'] ?>" class="block">
-                            <h3 class="text-xl font-bold mb-2"><?= htmlspecialchars($post['title']) ?></h3>
-                            <p class="text-gray-700 mb-4"><?= htmlspecialchars($post['message']) ?></p>
-                            <?php if (!empty($post['image'])): ?>
-                                <img src="data:image/jpeg;base64,<?= base64_encode($post['image']) ?>" alt="Post Image" class="w-full h-auto rounded mb-4">
-                            <?php endif; ?>
-                        </a>
-                        <div class="flex items-center justify-between text-gray-500 text-sm">
-                            <div class="flex justify-between w-full">
-                                <button type="button" 
-                                        id="like-button-<?= $post['id'] ?>" 
-                                        class="like-button <?= $user_like ? 'liked' : '' ?>" 
-                                        data-post-id="<?= $post['id'] ?>">
-                                    <i class="fas fa-thumbs-up"></i>
-                                    <span>Like (<span id="like-count-<?= $post['id'] ?>"><?= $like_count ?></span>)</span>
-                                </button>
-                                <button class="flex items-center space-x-1">
-                                    <i class="fas fa-comment"></i>
-                                    <span>Comment (<?= $comment_count ?>)</span>
-                                </button>
-                                <button onclick="openReportModal()" class="flex items-center space-x-1 hover:text-red-500 transition-colors duration-200">
+
+                            <!-- Post Content -->
+                            <a href="postDetails.php?post_id=<?= $post['id'] ?>" class="block group">
+                                <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-sky-600 transition-colors">
+                                    <?= htmlspecialchars($post['title']) ?>
+                                </h3>
+                                <p class="text-gray-600 leading-relaxed mb-4">
+                                    <?= htmlspecialchars($post['message']) ?>
+                                </p>
+                                <?php if (!empty($post['image'])): ?>
+                                    <div class="relative -mx-6 mb-4 bg-gray-100">
+                                        <img src="data:image/jpeg;base64,<?= base64_encode($post['image']) ?>" 
+                                            alt="Post Image" 
+                                            class="w-full h-auto max-h-96 object-cover transform group-hover:scale-[1.02] transition-transform duration-300">
+                                    </div>
+                                <?php endif; ?>
+                            </a>
+
+                            <!-- Post Actions -->
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                                <div class="flex items-center space-x-6">
+                                    <!-- Like Button -->
+                                    <button type="button" 
+                                            id="like-button-<?= $post['id'] ?>" 
+                                            class="like-button <?= $user_like ? 'liked' : '' ?>" 
+                                            data-post-id="<?= $post['id'] ?>">
+                                        <i class="fas fa-thumbs-up"></i>
+                                        <span class="text-sm">
+                                            <?= $like_count ?> <?= $like_count === 1 ? 'Like' : 'Likes' ?>
+                                        </span>
+                                    </button>
+
+                                    <!-- Comment Button -->
+                                    <a href="postDetails.php?post_id=<?= $post['id'] ?>#comments" 
+                                       class="flex items-center space-x-2 text-gray-500 hover:text-sky-500 transition-colors">
+                                        <i class="fas fa-comment"></i>
+                                        <span class="text-sm">
+                                            <?= $comment_count ?> <?= $comment_count === 1 ? 'Comment' : 'Comments' ?>
+                                        </span>
+                                    </a>
+
+                                    <!-- Share Button -->
+                                    <button class="flex items-center space-x-2 text-gray-500 hover:text-sky-500 transition-colors">
+                                        <i class="fas fa-share"></i>
+                                        <span class="text-sm">Share</span>
+                                    </button>
+                                </div>
+
+                                <!-- Report Button -->
+                                <button onclick="openReportModal()" 
+                                        class="flex items-center space-x-2 text-gray-400 hover:text-red-500 transition-colors text-sm">
                                     <i class="fas fa-flag"></i>
                                     <span>Report</span>
                                 </button>
@@ -604,19 +655,30 @@ document.addEventListener("DOMContentLoaded", fetchJoinedBubbles);
                 type: 'POST',
                 data: { post_id: postId },
                 success: function(response) {
-                    const data = JSON.parse(response);
-                    if (data.success) {
-                        button.toggleClass('liked');
-                        $('#like-count-' + postId).text(data.likes);
-                        
-                        // Add a small animation when liking
-                        if (button.hasClass('liked')) {
+                    try {
+                        const data = JSON.parse(response);
+                        if (data.success) {
+                            // Toggle the liked state
+                            button.toggleClass('liked');
+                            
+                            // Update the like count text
+                            const likeCountText = data.likes === 1 ? '1 Like' : data.likes + ' Likes';
+                            button.find('span').text(likeCountText);
+                            
+                            // Add animation effect
                             button.find('i').addClass('animate-bounce');
                             setTimeout(() => {
                                 button.find('i').removeClass('animate-bounce');
                             }, 1000);
+                        } else {
+                            console.error('Like toggle failed:', data.message);
                         }
+                    } catch (e) {
+                        console.error('Error parsing response:', e);
                     }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Ajax request failed:', error);
                 }
             });
         });
