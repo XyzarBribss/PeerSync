@@ -187,6 +187,7 @@ $notebook_stmt->close();
         </div>
 
         <div class="content-container flex-grow flex flex-col h-full p-5 overflow-y-auto bg-white">
+
             <div id="chat" class="hidden flex flex-col h-full">
             <h2 class="text-2xl font-bold mb-4">Chat</h2>
                 <div id="chat-messages" class="flex-grow space-y-4 p-2 bg-white overflow-y-auto">
@@ -237,46 +238,109 @@ $notebook_stmt->close();
             </div>
 
             <div id="forum" class="hidden flex flex-col h-full">
-            <h2 class="text-2xl font-bold mb-4">Thread</h2>
-                <form id="forum-form" class="space-y-2 mb-2 flex-shrink-0 bg-white p-2 rounded shadow-md border border-gray-300" enctype="multipart/form-data" method="post" action="addBubblePost.php">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-bold text-gray-800">Discussion Forum</h2>
+                    <div class="flex space-x-2">
+                        <button id="new-post-btn" class="bg-sky-500 text-white px-6 py-3 rounded-lg hover:bg-sky-600 transition duration-300 flex items-center">
+                            <i class="fas fa-plus-circle mr-2"></i>New Post
+                        </button>
+                    </div>
+                </div>
+
+                <form id="forum-form" class="hidden space-y-4 mb-6 bg-white p-6 rounded-xl shadow-lg border border-gray-200" enctype="multipart/form-data" method="post" action="addBubblePost.php">
                     <input type="hidden" name="bubble_id" value="<?php echo $bubble_id; ?>">
                     <input type="hidden" name="user_id" value="<?php echo $user_id; ?>">
-                    <input type="text" name="title" id="forum-title" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-sky-500" placeholder="Title" required>
-                    <textarea name="message" id="forum-message" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-sky-500" placeholder="Message" required></textarea>
-                    <input type="file" name="image" id="forum-image" class="flex-grow p-2 border rounded focus:outline-none focus:ring-2 focus:ring-sky-500">
-                    <button type="submit" class="ml-2 p-2 bg-sky-500 text-white rounded hover:bg-sky-600 transition duration-300">Post</button>
+                    
+                    <div class="space-y-2">
+                        <label for="forum-title" class="block text-sm font-medium text-gray-700">Title</label>
+                        <input type="text" name="title" id="forum-title" 
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors" 
+                            placeholder="What's on your mind?" required>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="forum-message" class="block text-sm font-medium text-gray-700">Message</label>
+                        <textarea name="message" id="forum-message" rows="4"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors" 
+                            placeholder="Share your thoughts..." required></textarea>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="forum-image" class="block text-sm font-medium text-gray-700">Attach Image (optional)</label>
+                        <div class="flex items-center space-x-3">
+                            <label class="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-image mr-2 text-gray-500"></i>
+                                <span class="text-sm text-gray-600">Choose Image</span>
+                                <input type="file" name="image" id="forum-image" class="hidden" accept="image/*">
+                            </label>
+                            <span id="file-name" class="text-sm text-gray-500"></span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" id="cancel-post" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-6 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors">
+                            Post
+                        </button>
+                    </div>
                 </form>
-                <div id="forum-posts" class="flex-grow space-y-4 overflow-y-auto mt-4">
+
+                <div id="forum-posts" class="grid gap-6 grid-cols-1 lg:grid-cols-2 overflow-y-auto">
                     <?php foreach ($posts as $post): ?>
-                        <div class="p-4 bg-white rounded shadow-lg flex justify-between items-start transition transform hover:shadow-2xl h-64 hover:-translate-y-1 border border-gray-200 cursor-pointer relative" data-post-id="<?= $post['id'] ?>">
-                            <div class="flex-grow">
-                                <a href="postDetails.php?post_id=<?= $post['id'] ?>" class="block">
-                                    <div class="flex items-center mb-2">
-                                        <img src="<?= htmlspecialchars($post['profile_image']) ?>" alt="Profile Image" class="w-8 h-8 rounded-full mr-3">
+                        <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition duration-300 border border-gray-200 overflow-hidden">
+                            <a href="postDetails.php?post_id=<?= $post['id'] ?>" class="block">
+                                <?php if (!empty($post['image'])): ?>
+                                    <div class="w-full h-48 overflow-hidden">
+                                        <img src="data:image/jpeg;base64,<?= base64_encode($post['image']) ?>" 
+                                            alt="Post image" 
+                                            class="w-full h-full object-cover transform hover:scale-105 transition duration-500">
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <div class="p-6">
+                                    <div class="flex items-center space-x-3 mb-4">
+                                        <img src="<?= htmlspecialchars($post['profile_image']) ?>" 
+                                            alt="Profile" 
+                                            class="w-10 h-10 rounded-full border-2 border-gray-200">
                                         <div>
-                                            <h3 class="font-semibold text-sky-900"><?= htmlspecialchars($post['username']) ?></h3>
-                                            <h4 class="text-gray-500 text-xs"><?= htmlspecialchars($post['created_at']) ?></h4>
+                                            <h3 class="font-semibold text-gray-800"><?= htmlspecialchars($post['username']) ?></h3>
+                                            <p class="text-sm text-gray-500"><?= date('M d, Y \a\t h:i A', strtotime($post['created_at'])) ?></p>
                                         </div>
                                     </div>
-                                    <h3 class="font-semibold text-sky-900 mb-2"><?= htmlspecialchars($post['title']) ?></h3>
-                                    <p class="text-gray-500 text-sm"><?= htmlspecialchars($post['message']) ?></p>
-                                </a>
-                            </div>
-                            <?php if (!empty($post['image'])): ?>
-                                <img src="data:image/jpeg;base64,<?= base64_encode($post['image']) ?>" alt=" " class="ml-4 rounded object-cover" style="width: 300px; height: 150px;">
-                            <?php endif; ?>
-                            <div class="relative">
-                                <button class="dropdown-toggle p-2 rounded-full hover:bg-gray-300 focus:outline-none">
-                                    <i class="fas fa-ellipsis-v"></i>
-                                </button>
-                                <div class="dropdown-menu absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg hidden">
-                                    <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Report</a>
-                                    <?php if ($post['user_id'] == $user_id): ?>
-                                        <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Edit</a>
-                                        <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Delete</a>
-                                    <?php endif; ?>
+
+                                    <h3 class="text-xl font-bold text-gray-800 mb-2 line-clamp-2"><?= htmlspecialchars($post['title']) ?></h3>
+                                    <p class="text-gray-600 line-clamp-3 mb-4"><?= htmlspecialchars($post['message']) ?></p>
+                                    
+                                    <div class="flex items-center justify-between text-sm text-gray-500">
+                                        <div class="flex items-center space-x-4">
+                                            <span class="flex items-center">
+                                                <i class="far fa-comment mr-1"></i>
+                                                <span>12 replies</span>
+                                            </span>
+                                            <span class="flex items-center">
+                                                <i class="far fa-eye mr-1"></i>
+                                                <span>48 views</span>
+                                            </span>
+                                        </div>
+                                        
+                                        <?php if ($post['user_id'] == $user_id): ?>
+                                            <div class="relative inline-block text-left">
+                                                <button class="p-2 hover:bg-gray-100 rounded-full transition-colors focus:outline-none" 
+                                                        onclick="event.preventDefault(); toggleDropdown(<?= $post['id'] ?>)">
+                                                    <i class="fas fa-ellipsis-h"></i>
+                                                </button>
+                                                <div id="dropdown-<?= $post['id'] ?>" 
+                                                    class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-10">
+                                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Edit post</a>
+                                                    <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete post</a>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
-                            </div>
+                            </a>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -284,178 +348,155 @@ $notebook_stmt->close();
 
 
             <div id="notebook" class="hidden flex-grow flex flex-col">
-    <h2 class="text-2xl font-bold mb-4">Notebook</h2>
-    <div class="flex justify-between items-center mb-8">
-        <h1 class="text-3xl font-bold">Bubble Notebooks</h1>
-        <button class="bg-blue-500 text-white p-2 rounded">Share Your Notebook</button>
-    </div>
-
-    <!-- Search and Filter Bar -->
-    <div class="flex flex-col sm:flex-row gap-4 mb-8">
-        <div class="relative flex-1">
-            <i class="fas fa-search absolute left-3 top-3 h-4 w-4 text-gray-400"></i>
-            <input type="text" placeholder="Search notebooks..." class="pl-10 w-full p-2 border rounded">
-        </div>
-        <select class="w-full sm:w-[180px] p-2 border rounded">
-            <option value="recent">Most Recent</option>
-            <option value="popular">Most Popular</option>
-            <option value="discussed">Most Discussed</option>
-        </select>
-    </div>
-
-    <!-- Bubble Stats -->
-    <div class="bg-white p-4 rounded shadow mb-8">
-        <div class="mb-4">
-            <h3 class="text-xl font-bold">Bubble Insights</h3>
-            <p class="text-gray-500">Explore our community's notebook activity</p>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div class="flex flex-col items-center">
-                <i class="fas fa-book-open h-8 w-8 text-blue-500 mb-2"></i>
-                <span class="text-2xl font-bold">156</span>
-                <span class="text-sm text-gray-500">Shared Notebooks</span>
-            </div>
-            <div class="flex flex-col items-center">
-                <i class="fas fa-star h-8 w-8 text-blue-500 mb-2"></i>
-                <span class="text-2xl font-bold">42</span>
-                <span class="text-sm text-gray-500">Featured Notes</span>
-            </div>
-            <div class="flex flex-col items-center">
-                <i class="fas fa-bookmark h-8 w-8 text-blue-500 mb-2"></i>
-                <span class="text-2xl font-bold">328</span>
-                <span class="text-sm text-gray-500">Bookmarks</span>
-            </div>
-            <div class="flex flex-col items-center">
-                <i class="fas fa-users h-8 w-8 text-blue-500 mb-2"></i>
-                <span class="text-2xl font-bold">89%</span>
-                <span class="text-sm text-gray-500">Active Members</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notebook Grid -->
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold">Recent Notebooks</h2>
-        <div class="flex gap-2">
-            <button class="border p-2 rounded" onclick="setView('grid')">Grid</button>
-            <button class="border p-2 rounded" onclick="setView('list')">List</button>
-        </div>
-    </div>
-
-    <div id="notebook-grid" class="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        <?php foreach ($notebooks as $notebook): ?>
-            <div class="bg-white p-4 rounded shadow group transition-all hover:shadow-lg">
-                <div class="flex items-center gap-4 mb-4">
-                    <img src="data:image/jpeg;base64,<?php echo base64_encode($notebook['profile_image']); ?>" alt="Profile Image" class="w-10 h-10 rounded-full">
-                    <div>
-                        <h3 class="text-lg font-bold"><?php echo htmlspecialchars($notebook['name']); ?></h3>
-                        <p class="text-gray-500">by <?php echo htmlspecialchars($notebook['username']); ?> • Updated <?php echo htmlspecialchars($notebook['updated_at']); ?></p>
-                    </div>
-                </div>
-                <p class="text-gray-500 mb-4"><?php echo htmlspecialchars($notebook['description']); ?></p>
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <?php foreach ($notebook['tags'] as $tag): ?>
-                        <span class="bg-gray-200 text-gray-700 p-1 rounded"><?php echo htmlspecialchars($tag); ?></span>
-                    <?php endforeach; ?>
-                </div>
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-4 text-sm text-gray-500">
-                        <span class="flex items-center gap-1">
-                            <i class="fas fa-book-open h-4 w-4"></i>
-                            <?php echo htmlspecialchars($notebook['views']); ?> views
-                        </span>
-                        <span class="flex items-center gap-1">
-                            <i class="fas fa-comments h-4 w-4"></i>
-                            <?php echo htmlspecialchars($notebook['comments']); ?> comments
-                        </span>
-                    </div>
-                    <button class="text-blue-500 flex items-center gap-1">
-                        <i class="fas fa-share h-4 w-4"></i>
-                        Share
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Shared Notebooks</h1>
+                    <button onclick="openShareModal()" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition duration-300 flex items-center">
+                        <i class="fas fa-share-alt mr-2"></i>Share Your Notebook
                     </button>
                 </div>
-            </div>
-        <?php endforeach; ?>
-    </div>
-</div>
 
-<script>
-    function setView(view) {
-        const notebookGrid = document.getElementById('notebook-grid');
-        if (view === 'grid') {
-            notebookGrid.classList.remove('grid-cols-1');
-            notebookGrid.classList.add('md:grid-cols-2', 'lg:grid-cols-3');
-        } else {
-            notebookGrid.classList.add('grid-cols-1');
-            notebookGrid.classList.remove('md:grid-cols-2', 'lg:grid-cols-3');
-        }
-    }
-</script>
-
-<div id="settings" class="hidden flex-grow flex flex-col">
-    <!-- General Settings Tab -->
-    <div class="tabs">
-        <div class="tabs-content">
-            <div id="general" class="tab-content">
-                <div class="card bg-white p-4 rounded shadow">
-                    <div class="card-header mb-4">
-                        <h2 class="card-title text-xl font-bold">General Settings</h2>
-                        <p class="card-description text-gray-500">Manage your bubble's general settings</p>
-                    </div>
-                    <div class="card-content space-y-4">
-                        <div class="space-y-2">
-                            <label for="bubble-name" class="block text-sm font-medium text-gray-700">Bubble Name</label>
-                            <input type="text" id="bubble-name" name="bubble_name" class="input w-full p-2 border rounded" value="<?php echo htmlspecialchars($bubble['bubble_name']); ?>" required>
-                        </div>
-                        <div class="space-y-2">
-                        <label for="bubble-image" class="block text-sm font-medium">Bubble Image</label>
-                        <div class="flex items-center space-x-4">
-                            <img src="data:image/jpeg;base64,<?php echo base64_encode($bubble['profile_image']); ?>" alt="Bubble" class="h-20 w-20 rounded-full">
-                            <input type="file" id="bubble-image" name="profile_image" class="input p-2 border rounded">
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-4">
-                    <button class="btn btn-primary p-2 rounded bg-blue-500 text-white" onclick="updateBubbleDetails()">Save Changes</button>
-                </div>
-                </div>
-            </div>
-
-            <!-- Manage Users Tab -->
-            <div id="users" class="tab-content mt-6">
-                <div class="card bg-white p-4 rounded shadow">
-                    <div class="card-header mb-4">
-                        <h2 class="card-title text-xl font-bold">Manage Users</h2>
-                        
-                    </div>
-                    <div class="card-content">
-                        <div class="space-y-4">
-                            <label for="add-user" class="block text-sm font-medium text-gray-700">Add User to Bubble</label>
-                            <input type="text" id="add-user" class="w-full p-2 border rounded" placeholder="Enter username to add">
-                            <button class="mt-2 p-2 bg-green-500 text-white rounded" onclick="addUserToBubble()">Add User</button>
-                        </div>
-
-                        <h3 class="mt-6 font-semibold text-lg">Current Members</h3>
-                        <ul id="user-list" class="space-y-2 mt-4">
-                           
-                        <?php
-                            $members->data_seek(0); // Reset the result set pointer
-                            while ($member = $members->fetch_assoc()): ?>
-                            <li class="flex items-center justify-between space-x-4">
-                                <div class="flex items-center space-x-2">
-                                    <img src="<?php echo htmlspecialchars($member['profile_image']); ?>" alt="Profile Image" class="w-8 h-8 rounded-full">
-                                    <span><?php echo htmlspecialchars($member['username']); ?></span>
+                <!-- Notebook Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <?php
+                    // Fetch shared notebooks for this bubble
+                    $notebooks_query = "SELECT n.*, u.username, u.profile_image, np.permission_level 
+                                    FROM notebooks n 
+                                    JOIN users u ON n.user_id = u.id 
+                                    JOIN notebook_permissions np ON n.id = np.notebook_id 
+                                    WHERE np.bubble_id = ?
+                                    ORDER BY n.created_at DESC";
+                    $stmt = $conn->prepare($notebooks_query);
+                    $stmt->bind_param("i", $bubble_id);
+                    $stmt->execute();
+                    $shared_notebooks = $stmt->get_result();
+                    
+                    while ($notebook = $shared_notebooks->fetch_assoc()): ?>
+                        <div class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition duration-300 relative overflow-hidden border-l-4 border-rose-600 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(#f8fafc_1px,transparent_1px)] bg-[size:25px_100%,100%_25px]">
+                            <!-- Notebook holes decoration -->
+                            <div class="absolute left-4 inset-y-0 flex flex-col justify-around pointer-events-none">
+                                <div class="w-3 h-3 rounded-full bg-gray-300 shadow-inner"></div>
+                                <div class="w-3 h-3 rounded-full bg-gray-300 shadow-inner"></div>
+                                <div class="w-3 h-3 rounded-full bg-gray-300 shadow-inner"></div>
+                            </div>
+                            
+                            <div class="ml-8"> <!-- Added margin to account for the holes -->
+                                <div class="flex items-start justify-between mb-4">
+                                    <div class="flex items-center space-x-3">
+                                        <img src="<?php echo htmlspecialchars($notebook['profile_image']); ?>" 
+                                            alt="Profile" 
+                                            class="w-10 h-10 rounded-full border-2 border-gray-200 shadow-sm">
+                                        <div>
+                                            <h3 class="font-serif font-semibold text-gray-800 text-lg leading-snug">
+                                                <?php echo htmlspecialchars($notebook['name']); ?>
+                                            </h3>
+                                            <p class="text-sm text-gray-500 italic mt-0.5">
+                                                by <?php echo htmlspecialchars($notebook['username']); ?>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <?php if ($notebook['user_id'] == $user_id): ?>
+                                        <div class="relative">
+                                            <button onclick="toggleMenu(<?php echo $notebook['id']; ?>)" 
+                                                    class="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100 transition-colors">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <div id="menu-<?php echo $notebook['id']; ?>" 
+                                                class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-10 ring-1 ring-black ring-opacity-5">
+                                                <a href="#" onclick="editPermissions(<?php echo $notebook['id']; ?>)" 
+                                                class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors rounded-t-lg">
+                                                    <i class="fas fa-user-lock mr-2"></i>Edit Permissions
+                                                </a>
+                                                <a href="#" onclick="removeShare(<?php echo $notebook['id']; ?>)" 
+                                                class="block px-4 py-2 text-red-600 hover:bg-red-50 transition-colors rounded-b-lg">
+                                                    <i class="fas fa-trash mr-2"></i>Remove Share
+                                                </a>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
-                                <button class="bg-red-500 text-white p-2 rounded" onclick="removeMember(<?php echo $member['id']; ?>)">Remove</button>
-                            </li>
-                        <?php endwhile; ?>
-                        </ul>
+                                <div class="flex items-center justify-between text-sm text-gray-500 mt-4 pt-4 border-t border-gray-100">
+                                    <span class="flex items-center bg-gray-50 px-3 py-1 rounded-full">
+                                        <i class="fas <?php echo $notebook['permission_level'] === 'edit' ? 'fa-edit text-blue-500' : 'fa-eye text-green-500'; ?> mr-2"></i>
+                                        <?php echo $notebook['permission_level'] === 'edit' ? 'Can Edit' : 'View Only'; ?>
+                                    </span>
+                                    <span class="flex items-center">
+                                        <i class="far fa-clock mr-2"></i>
+                                        <?php echo date('M d, Y', strtotime($notebook['created_at'])); ?>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endwhile; ?>
+                </div>
+            </div>
+
+
+
+            <div id="settings" class="hidden flex-grow flex flex-col">
+                <!-- General Settings Tab -->
+                <div class="tabs">
+                    <div class="tabs-content">
+                        <div id="general" class="tab-content">
+                            <div class="card bg-white p-4 rounded shadow">
+                                <div class="card-header mb-4">
+                                    <h2 class="card-title text-xl font-bold">General Settings</h2>
+                                    <p class="card-description text-gray-500">Manage your bubble's general settings</p>
+                                </div>
+                                <div class="card-content space-y-4">
+                                    <div class="space-y-2">
+                                        <label for="bubble-name" class="block text-sm font-medium text-gray-700">Bubble Name</label>
+                                        <input type="text" id="bubble-name" name="bubble_name" class="input w-full p-2 border rounded" value="<?php echo htmlspecialchars($bubble['bubble_name']); ?>" required>
+                                    </div>
+                                    <div class="space-y-2">
+                                    <label for="bubble-image" class="block text-sm font-medium">Bubble Image</label>
+                                    <div class="flex items-center space-x-4">
+                                        <img src="data:image/jpeg;base64,<?php echo base64_encode($bubble['profile_image']); ?>" alt="Bubble" class="h-20 w-20 rounded-full">
+                                        <input type="file" id="bubble-image" name="profile_image" class="input p-2 border rounded">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <button class="btn btn-primary p-2 rounded bg-blue-500 text-white" onclick="updateBubbleDetails()">Save Changes</button>
+                            </div>
+                            </div>
+                        </div>
+
+                        <!-- Manage Users Tab -->
+                        <div id="users" class="tab-content mt-6">
+                            <div class="card bg-white p-4 rounded shadow">
+                                <div class="card-header mb-4">
+                                    <h2 class="card-title text-xl font-bold">Manage Users</h2>
+                                    
+                                </div>
+                                <div class="card-content">
+                                    <div class="space-y-4">
+                                        <label for="add-user" class="block text-sm font-medium text-gray-700">Add User to Bubble</label>
+                                        <input type="text" id="add-user" class="w-full p-2 border rounded" placeholder="Enter username to add">
+                                        <button class="mt-2 p-2 bg-green-500 text-white rounded" onclick="addUserToBubble()">Add User</button>
+                                    </div>
+
+                                    <h3 class="mt-6 font-semibold text-lg">Current Members</h3>
+                                    <ul id="user-list" class="space-y-2 mt-4">
+                                    
+
+                                    <?php
+                                        $members->data_seek(0); // Reset the result set pointer
+                                        while ($member = $members->fetch_assoc()): ?>
+                                        <li class="flex items-center justify-between space-x-4">
+                                            <div class="flex items-center space-x-2">
+                                                <img src="<?php echo htmlspecialchars($member['profile_image']); ?>" alt="Profile Image" class="w-8 h-8 rounded-full">
+                                                <span><?php echo htmlspecialchars($member['username']); ?></span>
+                                            </div>
+                                            <button class="bg-red-500 text-white p-2 rounded" onclick="removeMember(<?php echo $member['id']; ?>)">Remove</button>
+                                        </li>
+                                    <?php endwhile; ?>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
 
     <script>
         // Toggle profile dropdown menu
@@ -612,111 +653,199 @@ $notebook_stmt->close();
     });
 });
 
+// Share Modal
+function openShareModal() {
+    document.getElementById('shareModal').classList.remove('hidden');
+}
 
+function closeShareModal() {
+    document.getElementById('shareModal').classList.add('hidden');
+}
 
-function removeMember(memberId) {
-    if (confirm("Are you sure you want to remove this member?")) {
-        fetch('removeMember.php', {
+function toggleMenu(notebookId) {
+    const menu = document.getElementById(`menu-${notebookId}`);
+    document.querySelectorAll('[id^="menu-"]').forEach(m => {
+        if (m.id !== `menu-${notebookId}`) m.classList.add('hidden');
+    });
+    menu.classList.toggle('hidden');
+}
+
+// Share Notebook
+function handleShare(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    fetch('shareNotebook.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeShareModal();
+            location.reload();
+        } else {
+            alert(data.message || 'Error sharing notebook');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error sharing notebook');
+    });
+}
+
+// Remove Share
+function removeShare(notebookId) {
+    if (confirm('Are you sure you want to remove this notebook share?')) {
+        fetch('removeNotebookShare.php', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bubble_id: <?php echo $bubble_id; ?>, user_id: memberId })
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                notebook_id: notebookId,
+                bubble_id: <?php echo $bubble_id; ?>
+            })
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert("Member removed successfully");
-                location.reload(); // Refresh the page to update the member list
+                location.reload();
             } else {
-                alert("Error: " + data.message);
+                alert(data.message || 'Error removing share');
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error removing share');
         });
     }
 }
 
-
-    function showTab(tab) {
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-        document.getElementById(tab).classList.remove('hidden');
+// Close menus when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('[id^="menu-"]') && 
+        !event.target.closest('button')) {
+        document.querySelectorAll('[id^="menu-"]').forEach(menu => {
+            menu.classList.add('hidden');
+        });
     }
+});
 
-    function handleRemoveUser(userId) {
-        // Implement user removal logic here
-        console.log('Removing user with ID:', userId);
-    }
+// Forum post form handling
+document.addEventListener('DOMContentLoaded', function() {
+    const newPostBtn = document.getElementById('new-post-btn');
+    const forumForm = document.getElementById('forum-form');
+    const cancelBtn = document.getElementById('cancel-post');
+    const fileInput = document.getElementById('forum-image');
+    const fileNameDisplay = document.getElementById('file-name');
 
-    function updateBubbleDetails() {
-    const bubbleName = document.getElementById('bubble-name').value;
-    const bubbleImage = document.getElementById('bubble-image').files[0];
+    // Toggle form visibility
+    newPostBtn.addEventListener('click', function() {
+        forumForm.classList.remove('hidden');
+        document.getElementById('forum-title').focus();
+    });
 
-    const formData = new FormData();
-    formData.append('bubble_name', bubbleName);
-    formData.append('bubble_id', "<?php echo $bubble_id; ?>");
-    if (bubbleImage) formData.append('profile_image', bubbleImage);
+    // Handle cancel button
+    cancelBtn.addEventListener('click', function() {
+        forumForm.classList.add('hidden');
+        forumForm.reset();
+        fileNameDisplay.textContent = '';
+    });
 
-    fetch('updateBubbleSettings.php', {
-        method: 'POST',
-        body: formData,
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Bubble settings updated successfully.');
+    // Display selected file name
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            fileNameDisplay.textContent = this.files[0].name;
+        } else {
+            fileNameDisplay.textContent = '';
+        }
+    });
 
-            // Update the displayed profile picture dynamically
-            const profileImageElement = document.querySelector('.card-content img');
-            if (profileImageElement && data.new_image) {
-                profileImageElement.src = `data:image/jpeg;base64,${data.new_image}`;
+    // Handle post dropdown menus
+    window.toggleDropdown = function(postId) {
+        const dropdown = document.getElementById(`dropdown-${postId}`);
+        const allDropdowns = document.querySelectorAll('[id^="dropdown-"]');
+        
+        // Close all other dropdowns
+        allDropdowns.forEach(menu => {
+            if (menu.id !== `dropdown-${postId}`) {
+                menu.classList.add('hidden');
             }
-        } else {
-            alert('Error updating bubble settings.');
+        });
+
+        // Toggle current dropdown
+        dropdown.classList.toggle('hidden');
+    };
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.relative')) {
+            const allDropdowns = document.querySelectorAll('[id^="dropdown-"]');
+            allDropdowns.forEach(menu => menu.classList.add('hidden'));
         }
-    })
-    .catch(error => console.error('Error:', error));
-}
+    });
+});
+</script>
 
-
-
-// Add a user to the bubble
-function addUserToBubble() {
-    const username = document.getElementById('add-user').value;
-    
-    fetch('addUserToBubble.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username, bubble_id: <?php echo $bubble_id; ?> })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('User added to bubble.');
-            location.reload(); // Reload to reflect changes
-        } else {
-            alert('Error adding user.');
-        }
-    })
-    .catch(error => console.error('Error:', error));
-}
-
-// Remove a user from the bubble
-function removeUserFromBubble(userId) {
-    fetch('removeUserFromBubble.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, bubble_id: <?php echo $bubble_id; ?> })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('User removed from bubble.');
-            location.reload(); // Reload to reflect changes
-        } else {
-            alert('Error removing user.');
-        }
-    })
-    .catch(error => console.error('Error:', error));
-}
-
-
-    </script>
+<!-- Share Modal -->
+<div id="shareModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="bg-white rounded-lg max-w-md mx-auto mt-20 p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold">Share Notebook</h3>
+            <button onclick="closeShareModal()" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="shareForm" onsubmit="handleShare(event)">
+            <input type="hidden" name="bubble_id" value="<?php echo $bubble_id; ?>">
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Select Notebook</label>
+                <select name="notebook_id" class="w-full p-3 border rounded-lg" required>
+                    <?php
+                    // Add error handling and debugging
+                    $user_notebooks_query = "SELECT id, name FROM notebooks WHERE user_id = ?";
+                    $stmt = $conn->prepare($user_notebooks_query);
+                    $stmt->bind_param("i", $user_id);
+                    $stmt->execute();
+                    $user_notebooks = $stmt->get_result();
+                    
+                    if ($user_notebooks->num_rows > 0) {
+                        while ($nb = $user_notebooks->fetch_assoc()) {
+                            echo "<option value='" . $nb['id'] . "'>" . htmlspecialchars($nb['name']) . "</option>";
+                        }
+                    } else {
+                        echo "<option value=''>No notebooks available</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Permission Level</label>
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input type="radio" name="permission" value="view" checked>
+                        <span class="ml-2">View Only - Members can only read</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="permission" value="edit">
+                        <span class="ml-2">Can Edit - Members can make changes</span>
+                    </label>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="closeShareModal()" 
+                        class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                    Share Notebook
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 </body>
 </html>

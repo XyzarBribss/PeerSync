@@ -9,9 +9,7 @@ if (!isset($_GET['post_id'])) {
 }
 
 $post_id = $_GET['post_id'];
-$user_id = $_SESSION['user_id'];
-
-// Fetch user data from the database
+$user_id = $_SESSION['user_id']; // Fetch user data from the database
 $query = "SELECT * FROM users WHERE id = ?";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $user_id);
@@ -67,16 +65,12 @@ $comment_stmt = $conn->prepare($comment_query);
 $comment_stmt->bind_param('i', $post['id']);
 $comment_stmt->execute();
 $comment_result = $comment_stmt->get_result();
-$comment_count = $comment_result->fetch_assoc()['comment_count'];
-
-// Close the statement
+$comment_count = $comment_result->fetch_assoc()['comment_count']; // Close the statement
 $stmt->close();
 
 // Handle post deletion
 if (isset($_POST['delete_post_id'])) {
-    $delete_post_id = $_POST['delete_post_id'];
-
-    // Check if the user is the owner of the post
+    $delete_post_id = $_POST['delete_post_id']; // Check if the user is the owner of the post
     $query = "SELECT user_id FROM bubble_posts WHERE id = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param('i', $delete_post_id);
@@ -105,9 +99,7 @@ if (isset($_POST['update_post_id'])) {
     $update_post_id = $_POST['update_post_id'];
     $updated_title = $_POST['title'];
     $updated_message = $_POST['message'];
-    $updated_image = $_FILES['image']['tmp_name'];
-
-    // Check if the user is the owner of the post
+    $updated_image = $_FILES['image']['tmp_name']; // Check if the user is the owner of the post
     $query = "SELECT user_id FROM bubble_posts WHERE id = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param('i', $update_post_id);
@@ -283,116 +275,319 @@ $(document).ready(function() {
                     </div>
                 </div>
 
-                <!-- Comment form -->
-                <div class="bg-white rounded-lg shadow-md mb-4">
-                    <div class="p-4">
-                        <h3 class="font-bold mb-2">Comment right here</h3>
-                        <form action="postComment.php" method="post">
-                            <textarea name="comment" class="w-full p-2 border rounded" rows="4" placeholder="What are your thoughts?"></textarea>
-                            <input type="hidden" name="post_id" value="<?= htmlspecialchars($post_id) ?>">
-                            <input type="hidden" name="bubble_id" value="<?= htmlspecialchars($post['bubble_id']) ?>">
-                            <button type="submit" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Comment</button>
-                        </form>
-                    </div>
-                </div>
-                <script>
-                $(document).ready(function() {
-                    $('form[action="postComment.php"]').on('submit', function(event) {
-                        event.preventDefault();
-                        var form = $(this);
-                        var formData = form.serialize();
-
-                        $.ajax({
-                            url: 'postComment.php',
-                            type: 'POST',
-                            data: formData,
-                            success: function(response) {
-                                // Assuming the response contains the new comment HTML
-                                var newComment = $(response);
-                                form.closest('.bg-white').next('.bg-white').append(newComment);
-                                form.find('textarea[name="comment"]').val(''); // Clear the textarea
-                            },
-                            error: function(xhr, status, error) {
-                                console.error('Error posting comment:', error);
-                            }
-                        });
-                    });
-                });
-                </script>
 
                 <!-- Display comments -->
                 <div class="bg-white p-4 shadow rounded mb-4">
                     <h3 class="font-bold mb-2">Comments</h3>
-                    <?php foreach ($comments as $comment): ?>
-                        <?php if (empty($comment['parent_comment_id'])): ?>
-                            <div class="mb-4 bg-gray-100 p-2 rounded">
-                                <div class="flex items-center mb-2">
-                                    <img src="<?= htmlspecialchars($comment['profile_image']) ?>" alt="<?= htmlspecialchars($comment['username']) ?>" class="w-8 h-8 rounded-full mr-2">
-                                    <p class="text-sm text-gray-500"><?= htmlspecialchars($comment['username']) ?>:</p>
-                                </div>
-                                <p class="mt-1"><?= htmlspecialchars($comment['comment']) ?></p>
-                                <button class="text-gray-500 text-sm" onclick="toggleReplies(<?= $comment['id'] ?>)">Like </button>
-                                <button class="text-gray-500 text-sm" onclick="toggleReplies(<?= $comment['id'] ?>)">Replies</button>
-                                <div id="replies-<?= $comment['id'] ?>" class="ml-4 hidden">
-                                    <?php
-                                    $reply_query = "
-                                        SELECT c.*, u.username, u.profile_image
-                                        FROM bubble_comments c
-                                        JOIN users u ON c.user_id = u.id
-                                        WHERE c.parent_comment_id = ?
-                                        ORDER BY c.created_at ASC
-                                    ";
-                                    $reply_stmt = $conn->prepare($reply_query);
-                                    $reply_stmt->bind_param('i', $comment['id']);
-                                    $reply_stmt->execute();
-                                    $reply_result = $reply_stmt->get_result();
-                                    $replies = $reply_result->fetch_all(MYSQLI_ASSOC);
-                                    foreach ($replies as $reply): ?>
-                                        <div class="mb-4 bg-gray-200 p-2 rounded">
-                                            <div class="flex items-center mb-2">
-                                                <img src="<?= htmlspecialchars($reply['profile_image']) ?>" alt="<?= htmlspecialchars($reply['username']) ?>" class="w-8 h-8 rounded-full mr-2">
-                                                <p class="text-sm text-gray-500"><?= htmlspecialchars($reply['username']) ?>:</p>
+                    <div class="mb-4">
+                        <form id="comment-form" class="space-y-2">
+                            <textarea name="comment" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Write a comment..."></textarea>
+                            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+                                Post Comment
+                            </button>
+                        </form>
+                    </div>
+                    <div id="comments-container">
+                        <?php foreach ($comments as $comment): ?>
+                            <?php if (empty($comment['parent_comment_id'])): ?>
+                                <div class="comment-item mb-4 bg-gray-50 p-3 rounded" data-comment-id="<?= $comment['id'] ?>">
+                                    <div class="flex items-start space-x-3">
+                                        <img src="<?= $comment['profile_image'] ?>" alt="Profile" class="w-8 h-8 rounded-full">
+                                        <div class="flex-grow">
+                                            <div class="flex items-center justify-between">
+                                                <span class="font-semibold"><?= htmlspecialchars($comment['username']) ?></span>
+                                                <div class="text-sm text-gray-500">
+                                                    <?= date('M d, Y H:i', strtotime($comment['created_at'])) ?>
+                                                </div>
                                             </div>
-                                            <p class="mt-1"><?= htmlspecialchars($reply['comment']) ?></p>
+                                            <p class="mt-1 comment-text"><?= htmlspecialchars($comment['comment']) ?></p>
+                                            <div class="mt-2 space-x-2">
+                                                <button onclick="showReplyForm(<?= $comment['id'] ?>)" class="text-sm text-blue-500 hover:text-blue-600">
+                                                    Reply
+                                                </button>
+                                                <?php if ($comment['user_id'] == $user_id): ?>
+                                                    <button onclick="editComment(<?= $comment['id'] ?>)" class="text-sm text-gray-500 hover:text-gray-600">
+                                                        Edit
+                                                    </button>
+                                                    <button onclick="deleteComment(<?= $comment['id'] ?>)" class="text-sm text-red-500 hover:text-red-600">
+                                                        Delete
+                                                    </button>
+                                                <?php endif; ?>
+                                            </div>
+                                            <!-- Reply form container -->
+                                            <div id="reply-form-<?= $comment['id'] ?>" class="hidden mt-2">
+                                                <form onsubmit="submitReply(event, <?= $comment['id'] ?>)" class="space-y-2">
+                                                    <textarea name="reply" class="w-full p-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Write a reply..."></textarea>
+                                                    <div class="flex space-x-2">
+                                                        <button type="submit" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">
+                                                            Reply
+                                                        </button>
+                                                        <button type="button" onclick="hideReplyForm(<?= $comment['id'] ?>)" class="text-gray-500 hover:text-gray-600 text-sm">
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                            <!-- Replies container -->
+                                            <div class="replies-container ml-8 mt-2">
+                                                <?php
+                                                foreach ($comments as $reply):
+                                                    if ($reply['parent_comment_id'] == $comment['id']):
+                                                ?>
+                                                    <div class="reply-item bg-white p-2 rounded mt-2" data-reply-id="<?= $reply['id'] ?>">
+                                                        <div class="flex items-start space-x-2">
+                                                            <img src="<?= $reply['profile_image'] ?>" alt="Profile" class="w-6 h-6 rounded-full">
+                                                            <div class="flex-grow">
+                                                                <div class="flex items-center justify-between">
+                                                                    <span class="font-semibold text-sm"><?= htmlspecialchars($reply['username']) ?></span>
+                                                                    <div class="text-xs text-gray-500">
+                                                                        <?= date('M d, Y H:i', strtotime($reply['created_at'])) ?>
+                                                                    </div>
+                                                                </div>
+                                                                <p class="text-sm mt-1 reply-text"><?= htmlspecialchars($reply['comment']) ?></p>
+                                                                <?php if ($reply['user_id'] == $user_id): ?>
+                                                                    <div class="mt-1 space-x-2">
+                                                                        <button onclick="editComment(<?= $reply['id'] ?>)" class="text-xs text-gray-500 hover:text-gray-600">
+                                                                            Edit
+                                                                        </button>
+                                                                        <button onclick="deleteComment(<?= $reply['id'] ?>)" class="text-xs text-red-500 hover:text-red-600">
+                                                                            Delete
+                                                                        </button>
+                                                                    </div>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                <?php
+                                                    endif;
+                                                endforeach;
+                                                ?>
+                                            </div>
                                         </div>
-                                    <?php endforeach; ?>
-                                    <!-- Reply form -->
-                                    <form action="postComment.php" method="post" class="mt-2 reply-form">
-                                        <textarea name="comment" class="w-full p-2 border rounded" rows="2" placeholder="Reply to this comment"></textarea>
-                                        <input type="hidden" name="post_id" value="<?= htmlspecialchars($post_id) ?>">
-                                        <input type="hidden" name="bubble_id" value="<?= htmlspecialchars($post['bubble_id']) ?>">
-                                        <input type="hidden" name="parent_comment_id" value="<?= htmlspecialchars($comment['id']) ?>">
-                                        <button type="submit" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Reply</button>
-                                    </form>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <script>
+                // Comment functionality
+                document.getElementById('comment-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const commentText = this.querySelector('textarea[name="comment"]').value;
+                    if (!commentText.trim()) return;
+
+                    submitComment(commentText);
+                    this.reset();
+                });
+
+                function submitComment(commentText, parentId = null) {
+                    fetch('handleComment.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'add',
+                            post_id: <?= $post_id ?>,
+                            comment: commentText,
+                            parent_id: parentId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (parentId) {
+                                // Add reply to the specific comment's replies container
+                                const repliesContainer = document.querySelector(`[data-comment-id="${parentId}"] .replies-container`);
+                                const replyHTML = createReplyHTML(data.comment);
+                                repliesContainer.insertAdjacentHTML('beforeend', replyHTML);
+                                hideReplyForm(parentId);
+                            } else {
+                                // Add new comment to the comments container
+                                const commentsContainer = document.getElementById('comments-container');
+                                const commentHTML = createCommentHTML(data.comment);
+                                commentsContainer.insertAdjacentHTML('afterbegin', commentHTML);
+                            }
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+
+                function createCommentHTML(comment) {
+                    const currentUserId = <?= $user_id ?>;
+                    const userActions = comment.user_id == currentUserId ? `
+                        <button onclick="editComment(${comment.id})" class="text-sm text-gray-500 hover:text-gray-600">Edit</button>
+                        <button onclick="deleteComment(${comment.id})" class="text-sm text-red-500 hover:text-red-600">Delete</button>
+                    ` : '';
+
+                    return `
+                        <div class="comment-item mb-4 bg-gray-50 p-3 rounded" data-comment-id="${comment.id}">
+                            <div class="flex items-start space-x-3">
+                                <img src="${comment.profile_image}" alt="Profile" class="w-8 h-8 rounded-full">
+                                <div class="flex-grow">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-semibold">${comment.username}</span>
+                                        <div class="text-sm text-gray-500">
+                                            ${new Date(comment.created_at).toLocaleString()}
+                                        </div>
+                                    </div>
+                                    <p class="mt-1 comment-text">${comment.comment}</p>
+                                    <div class="mt-2 space-x-2">
+                                        <button onclick="showReplyForm(${comment.id})" class="text-sm text-blue-500 hover:text-blue-600">Reply</button>
+                                        ${userActions}
+                                    </div>
+                                    <div id="reply-form-${comment.id}" class="hidden mt-2">
+                                        <form onsubmit="submitReply(event, ${comment.id})" class="space-y-2">
+                                            <textarea name="reply" class="w-full p-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Write a reply..."></textarea>
+                                            <div class="flex space-x-2">
+                                                <button type="submit" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">Reply</button>
+                                                <button type="button" onclick="hideReplyForm(${comment.id})" class="text-gray-500 hover:text-gray-600 text-sm">Cancel</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="replies-container ml-8 mt-2"></div>
                                 </div>
                             </div>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </div>
+                        </div>
+                    `;
+                }
 
-                <script>
-                $(document).ready(function() {
-                    $('.reply-form').on('submit', function(event) {
-                        event.preventDefault();
-                        var form = $(this);
-                        var formData = form.serialize();
+                function createReplyHTML(reply) {
+                    const currentUserId = <?= $user_id ?>;
+                    const userActions = reply.user_id == currentUserId ? `
+                        <div class="mt-1 space-x-2">
+                            <button onclick="editComment(${reply.id})" class="text-xs text-gray-500 hover:text-gray-600">Edit</button>
+                            <button onclick="deleteComment(${reply.id})" class="text-xs text-red-500 hover:text-red-600">Delete</button>
+                        </div>
+                    ` : '';
 
-                        $.ajax({
-                            url: 'postComment.php',
-                            type: 'POST',
-                            data: formData,
-                            success: function(response) {
-                                // Assuming the response contains the new reply HTML
-                                var newReply = $(response);
-                                form.closest('.bg-gray-100').find('.ml-4').append(newReply);
-                                form.find('textarea[name="comment"]').val(''); // Clear the textarea
+                    return `
+                        <div class="reply-item bg-white p-2 rounded mt-2" data-reply-id="${reply.id}">
+                            <div class="flex items-start space-x-2">
+                                <img src="${reply.profile_image}" alt="Profile" class="w-6 h-6 rounded-full">
+                                <div class="flex-grow">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-semibold text-sm">${reply.username}</span>
+                                        <div class="text-xs text-gray-500">
+                                            ${new Date(reply.created_at).toLocaleString()}
+                                        </div>
+                                    </div>
+                                    <p class="text-sm mt-1 reply-text">${reply.comment}</p>
+                                    ${userActions}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                function showReplyForm(commentId) {
+                    document.getElementById(`reply-form-${commentId}`).classList.remove('hidden');
+                }
+
+                function hideReplyForm(commentId) {
+                    const form = document.getElementById(`reply-form-${commentId}`);
+                    form.classList.add('hidden');
+                    form.querySelector('textarea').value = '';
+                }
+
+                function submitReply(event, commentId) {
+                    event.preventDefault();
+                    const replyText = event.target.querySelector('textarea[name="reply"]').value;
+                    if (!replyText.trim()) return;
+
+                    submitComment(replyText, commentId);
+                }
+
+                function editComment(commentId) {
+                    const commentElement = document.querySelector(`[data-comment-id="${commentId}"] .comment-text`) || 
+                                          document.querySelector(`[data-reply-id="${commentId}"] .reply-text`);
+                    const currentText = commentElement.textContent;
+                    
+                    const textArea = document.createElement('textarea');
+                    textArea.className = 'w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400';
+                    textArea.value = currentText;
+                    
+                    const saveButton = document.createElement('button');
+                    saveButton.textContent = 'Save';
+                    saveButton.className = 'mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 mr-2';
+                    
+                    const cancelButton = document.createElement('button');
+                    cancelButton.textContent = 'Cancel';
+                    cancelButton.className = 'mt-2 text-gray-500 hover:text-gray-600 text-sm';
+                    
+                    const container = document.createElement('div');
+                    container.appendChild(textArea);
+                    container.appendChild(saveButton);
+                    container.appendChild(cancelButton);
+                    
+                    commentElement.replaceWith(container);
+                    
+                    saveButton.onclick = () => {
+                        const newText = textArea.value;
+                        if (!newText.trim()) return;
+                        
+                        fetch('handleComment.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
                             },
-                            error: function(xhr, status, error) {
-                                console.error('Error posting reply:', error);
+                            body: JSON.stringify({
+                                action: 'edit',
+                                comment_id: commentId,
+                                comment: newText
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const newElement = document.createElement('p');
+                                newElement.className = commentElement.className;
+                                newElement.textContent = newText;
+                                container.replaceWith(newElement);
+                            } else {
+                                alert('Error: ' + data.message);
                             }
-                        });
-                    });
-                });
+                        })
+                        .catch(error => console.error('Error:', error));
+                    };
+                    
+                    cancelButton.onclick = () => {
+                        container.replaceWith(commentElement);
+                    };
+                }
+
+                function deleteComment(commentId) {
+                    if (!confirm('Are you sure you want to delete this comment?')) return;
+
+                    fetch('handleComment.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'delete',
+                            comment_id: commentId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+                            const replyElement = document.querySelector(`[data-reply-id="${commentId}"]`);
+                            if (commentElement) {
+                                commentElement.remove();
+                            } else if (replyElement) {
+                                replyElement.remove();
+                            }
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
                 </script>
             </div>
         </div>
