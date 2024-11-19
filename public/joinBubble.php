@@ -6,7 +6,7 @@ header('Content-Type: application/json');
 
 // Function to check if user is already a member
 function isUserMember($conn, $user_id, $bubble_id) {
-    $check_query = "SELECT id FROM bubble_members WHERE user_id = ? AND bubble_id = ?";
+    $check_query = "SELECT user_id FROM user_bubble WHERE user_id = ? AND bubble_id = ?";
     $stmt = $conn->prepare($check_query);
     $stmt->bind_param("ii", $user_id, $bubble_id);
     $stmt->execute();
@@ -39,7 +39,7 @@ if (isUserMember($conn, $user_id, $bubble_id)) {
 }
 
 // Insert the user into the bubble_members table
-$insert_query = "INSERT INTO bubble_members (user_id, bubble_id, joined_date) VALUES (?, ?, NOW())";
+$insert_query = "INSERT INTO user_bubble (user_id, bubble_id) VALUES (?, ?)";
 $stmt = $conn->prepare($insert_query);
 $stmt->bind_param("ii", $user_id, $bubble_id);
 

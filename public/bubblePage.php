@@ -433,19 +433,19 @@ $notebook_stmt->close();
 
 
             <div id="settings" class="hidden flex-grow flex flex-col">
-                <!-- General Settings Tab -->
-                <div class="tabs">
-                    <div class="tabs-content">
-                        <div id="general" class="tab-content">
-                            <div class="card bg-white p-4 rounded shadow">
-                                <div class="card-header mb-4">
-                                    <h2 class="card-title text-xl font-bold">General Settings</h2>
-                                    <p class="card-description text-gray-500">Manage your bubble's general settings</p>
-                                </div>
-                                <div class="card-content space-y-4">
-                                    <div class="space-y-2">
-                                        <label for="bubble-name" class="block text-sm font-medium text-gray-700">Bubble Name</label>
-                                        <input type="text" id="bubble-name" name="bubble_name" class="input w-full p-2 border rounded" value="<?php echo htmlspecialchars($bubble['bubble_name']); ?>" required>
+    <!-- General Settings Tab -->
+    <div class="tabs">
+        <div class="tabs-content">
+            <div id="general" class="tab-content">
+                <div class="card bg-white p-4 rounded shadow">
+                    <div class="card-header mb-4">
+                        <h2 class="card-title text-xl font-bold">General Settings</h2>
+                        <p class="card-description text-gray-500">Manage your bubble's general settings</p>
+                    </div>
+                    <div class="card-content space-y-4">
+                        <div class="space-y-2">
+                            <label for="bubble-name" class="block text-sm font-medium text-gray-700">Bubble Name</label>
+                            <input type="text" id="bubble-name" name="bubble_name" class="input w-full p-2 border rounded" value="<?php echo htmlspecialchars($bubble['bubble_name']); ?>" required>
                                     </div>
                                     <div class="space-y-2">
                                     <label for="bubble-image" class="block text-sm font-medium">Bubble Image</label>
@@ -787,6 +787,145 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+function hideEditModal() {
+            document.getElementById('edit-message-modal').classList.add('hidden');
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.remove-button').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const memberId = button.dataset.memberId;
+            const bubbleId = "<?php echo $bubble_id; ?>"; // Bubble ID passed from PHP
+
+            if (confirm("Are you sure you want to remove this member?")) {
+                try {
+                    const response = await fetch('removeMember.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ bubble_id: bubbleId, user_id: memberId })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        button.closest('li').remove(); // Remove from UI
+                        alert('Member removed successfully.');
+                    } else {
+                        alert('Failed to remove member.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error removing member.');
+                }
+            }
+        });
+    });
+});
+
+
+
+function removeMember(memberId) {
+    if (confirm("Are you sure you want to remove this member?")) {
+        fetch('removeMember.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bubble_id: <?php echo $bubble_id; ?>, user_id: memberId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("Member removed successfully");
+                location.reload(); // Refresh the page to update the member list
+            } else {
+                alert("Error: " + data.message);
+            }
+        });
+    }
+}
+
+
+    function showTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+        document.getElementById(tab).classList.remove('hidden');
+    }
+
+    function handleRemoveUser(userId) {
+        // Implement user removal logic here
+        console.log('Removing user with ID:', userId);
+    }
+
+    function updateBubbleDetails() {
+    const bubbleName = document.getElementById('bubble-name').value;
+    const bubbleImage = document.getElementById('bubble-image').files[0];
+
+    const formData = new FormData();
+    formData.append('bubble_name', bubbleName);
+    formData.append('bubble_id', "<?php echo $bubble_id; ?>");
+    if (bubbleImage) formData.append('profile_image', bubbleImage);
+
+    fetch('updateBubbleSettings.php', {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Bubble settings updated successfully.');
+
+            // Update the displayed profile picture dynamically
+            const profileImageElement = document.querySelector('.card-content img');
+            if (profileImageElement && data.new_image) {
+                profileImageElement.src = `data:image/jpeg;base64,${data.new_image}`;
+            }
+        } else {
+            alert('Error updating bubble settings.');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+
+
+// Add a user to the bubble
+function addUserToBubble() {
+    const username = document.getElementById('add-user').value;
+
+    fetch('addUserToBubble.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username, bubble_id: <?php echo $bubble_id; ?> })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('User added to bubble.');
+            location.reload(); // Reload to reflect changes
+        } else {
+            alert('Error adding user.');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Remove a user from the bubble
+function removeUserFromBubble(userId) {
+    fetch('removeUserFromBubble.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, bubble_id: <?php echo $bubble_id; ?> })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('User removed from bubble.');
+            location.reload(); // Reload to reflect changes
+        } else {
+            alert('Error removing user.');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
 </script>
 
 <!-- Share Modal -->
