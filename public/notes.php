@@ -76,7 +76,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_note_id'])) {
     $delete_note_stmt->close();
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'rename') {
+    $rename_note_id = $_POST['note_id'];
+    $new_title = $_POST['new_title'];
 
+    $rename_note_query = "UPDATE notes SET Title = ? WHERE NoteID = ?";
+    $rename_note_stmt = $conn->prepare($rename_note_query);
+    $rename_note_stmt->bind_param("si", $new_title, $rename_note_id);
+
+    if ($rename_note_stmt->execute()) {
+        echo json_encode(['success' => true]);
+        exit();
+    } else {
+        echo json_encode(['success' => false]);
+        exit();
+    }
+    $rename_note_stmt->close();
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete') {
+    $delete_note_id = $_POST['note_id'];
+
+    $delete_note_query = "DELETE FROM notes WHERE NoteID = ?";
+    $delete_note_stmt = $conn->prepare($delete_note_query);
+    $delete_note_stmt->bind_param("i", $delete_note_id);
+
+    if ($delete_note_stmt->execute()) {
+        echo json_encode(['success' => true]);
+        exit();
+    } else {
+        echo json_encode(['success' => false]);
+        exit();
+    }
+    $delete_note_stmt->close();
+}
 
 $notebook_id = $_GET['notebook_id'] ?? null;
 if ($notebook_id) {
@@ -180,8 +213,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
             <!-- Left Column - Notes List -->
             <div class="flex w-80 flex-col border-r bg-white">
                 <!-- Header -->
-                <header class="flex h-14 items-center gap-4 border-b bg-primary px-6 text-white" style="background-color: rgb(43 84 126);">
-                    <button class="shrink-0 p-2 text-white hover:bg-blue-700 rounded-lg" onclick="window.location.href='notebook.php'">
+                <header class="flex h-14 items-center gap-4 border-b bg-primary px-6 text-black">
+                    <button class="shrink-0 p-2 text-black hover:bg-gray-100 hover:text-gray-700 rounded-lg transition-colors" onclick="window.location.href='notebook.php'">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
@@ -200,12 +233,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
                     }
                     ?>
                     <h1 class="text-lg font-semibold truncate"><?php echo $notebook_title; ?></h1>
-                    <div class="ml-auto hidden" id="saveChangesContainer">
-                        <button type="button" onclick="saveNoteChanges(event)"
-                            class="px-4 h-9 bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors rounded">
-                            Save Changes
-                        </button>
-                    </div>
                 </header>
 
                 <!-- Fixed Search Bar -->
@@ -232,10 +259,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
                     <?php else: ?>
                         <div class="grid gap-2 p-2">
                             <?php foreach ($notes as $note): ?>
-                                <div class="bg-white rounded-lg border shadow-sm cursor-pointer transition-colors hover:bg-gray-50"
+                                <div class="bg-white rounded-lg border shadow-sm cursor-pointer transition-colors hover:bg-gray-50 relative group"
                                     onclick="showNoteDetails(<?php echo htmlspecialchars(json_encode($note)); ?>)">
                                     <div class="p-4">
-                                        <h3 class="text-base font-semibold"><?php echo htmlspecialchars($note['Title']); ?></h3>
+                                        <div class="flex justify-between items-start">
+                                            <h3 class="text-base font-semibold"><?php echo htmlspecialchars($note['Title']); ?></h3>
+                                            <div class="relative" onclick="event.stopPropagation()">
+                                                <button class="p-1 rounded-full hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100" 
+                                                    onclick="toggleNoteMenu(<?php echo $note['NoteID']; ?>)">
+                                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                                                    </svg>
+                                                </button>
+                                                <div id="noteMenu_<?php echo $note['NoteID']; ?>" 
+                                                    class="absolute right-0 mt-1 w-36 bg-white rounded-lg shadow-lg border hidden z-50">
+                                                    <div class="py-1">
+                                                        <button onclick="renameNote(<?php echo $note['NoteID']; ?>, '<?php echo htmlspecialchars(addslashes($note['Title'])); ?>')" 
+                                                            class="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors flex items-center gap-2">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                            </svg>
+                                                            Rename
+                                                        </button>
+                                                        <button onclick="deleteNote(<?php echo $note['NoteID']; ?>)" 
+                                                            class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                            </svg>
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <div class="flex items-center gap-2 text-sm text-gray-500">
                                             <span><?php echo date('M d, Y', strtotime($note['CreatedAt'])); ?></span>
                                             <span>•</span>
@@ -247,6 +303,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
                         </div>
                     <?php endif; ?>
                 </div>
+
+                <script>
+                    // Close all note menus when clicking outside
+                    document.addEventListener('click', function(event) {
+                        const menus = document.querySelectorAll('[id^="noteMenu_"]');
+                        menus.forEach(menu => {
+                            if (!menu.contains(event.target) && !event.target.closest('button[onclick^="toggleNoteMenu"]')) {
+                                menu.classList.add('hidden');
+                            }
+                        });
+                    });
+
+                    function toggleNoteMenu(noteId) {
+                        const menu = document.getElementById(`noteMenu_${noteId}`);
+                        const allMenus = document.querySelectorAll('[id^="noteMenu_"]');
+                        
+                        // Hide all other menus
+                        allMenus.forEach(m => {
+                            if (m !== menu) {
+                                m.classList.add('hidden');
+                            }
+                        });
+                        
+                        // Toggle current menu
+                        menu.classList.toggle('hidden');
+                    }
+
+                    function renameNote(noteId, currentTitle) {
+                        const newTitle = prompt('Enter new title:', currentTitle);
+                        if (newTitle && newTitle.trim() !== '' && newTitle !== currentTitle) {
+                            // Make an AJAX call to update the note title
+                            fetch('notes.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                },
+                                body: `action=rename&note_id=${noteId}&new_title=${encodeURIComponent(newTitle)}`
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    location.reload();
+                                } else {
+                                    alert('Failed to rename note. Please try again.');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('An error occurred while renaming the note.');
+                            });
+                        }
+                    }
+
+                    function deleteNote(noteId) {
+                        if (confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
+                            // Make an AJAX call to delete the note
+                            fetch('notes.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                },
+                                body: `action=delete&note_id=${noteId}`
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    location.reload();
+                                } else {
+                                    alert('Failed to delete note. Please try again.');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('An error occurred while deleting the note.');
+                            });
+                        }
+                    }
+                </script>
             </div>
 
             <div class="flex-1 overflow-hidden bg-white">
@@ -300,9 +434,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
         selector: '#noteContent, #noteDetailsContent',
         plugins: [
             'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 
-            'media', 'searchreplace', 'table', 'visualblocks', 'wordcount'
+            'media', 'searchreplace', 'table', 'visualblocks', 'wordcount', 'save'
         ],
-        toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough backcolor forecolor | link image media table | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+        toolbar: 'save | undo redo | blocks fontfamily fontsize | bold italic underline strikethrough backcolor forecolor | link image media table | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
         height: 'calc(100vh - 200px)',
         autoresize_overflow_padding: 0,
         autoresize_bottom_margin: 0,
@@ -310,6 +444,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
         overflow_y: 'auto',
         menubar: true,
         branding: false,
+        save_enablewhendirty: false,
+        save_onsavecallback: function() {
+            saveNoteChanges(new Event('save'));
+            return false;
+        },
         setup: function(editor) {
             editor.on('init', function() {
                 // This ensures TinyMCE is fully loaded before we try to set content
@@ -325,7 +464,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
     function showNoteDetails(note) {
         document.getElementById('emptyStateMessage').classList.add('hidden');
         document.getElementById('noteDetailsForm').classList.remove('hidden');
-        document.getElementById('saveChangesContainer').classList.remove('hidden');
         document.getElementById('update_note_id').value = note.NoteID;
         document.getElementById('noteDetailsTitle').value = note.Title;
         currentNoteId = note.NoteID;
@@ -368,7 +506,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
     function hideNoteDetails() {
         document.getElementById('noteDetailsForm').classList.add('hidden');
         document.getElementById('emptyStateMessage').classList.remove('hidden');
-        document.getElementById('saveChangesContainer').classList.add('hidden');
         currentNoteId = null;
     }
 

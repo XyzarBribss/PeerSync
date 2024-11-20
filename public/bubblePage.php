@@ -163,7 +163,7 @@ $notebook_stmt->close();
                 </li>
                 <li>
                     <a href="#" class="block p-2 rounded hover:bg-sky-200 transition duration-300" onclick="showContent('notebook')">
-                        <i class="fas fa-book mr-2"></i> Notebook
+                        <i class="fas fa-book mr-2"></i> Notebook Collab
                     </a>
                 </li>
                 <?php if ($bubble['creator_id'] == $user_id): ?>
@@ -371,65 +371,61 @@ $notebook_stmt->close();
                     $shared_notebooks = $stmt->get_result();
                     
                     while ($notebook = $shared_notebooks->fetch_assoc()): ?>
-                        <div class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition duration-300 relative overflow-hidden border-l-4 border-rose-600 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(#f8fafc_1px,transparent_1px)] bg-[size:25px_100%,100%_25px]">
-                            <!-- Notebook holes decoration -->
-                            <div class="absolute left-4 inset-y-0 flex flex-col justify-around pointer-events-none">
-                                <div class="w-3 h-3 rounded-full bg-gray-300 shadow-inner"></div>
-                                <div class="w-3 h-3 rounded-full bg-gray-300 shadow-inner"></div>
-                                <div class="w-3 h-3 rounded-full bg-gray-300 shadow-inner"></div>
-                            </div>
-                            
-                            <div class="ml-8"> <!-- Added margin to account for the holes -->
-                                <div class="flex items-start justify-between mb-4">
+                        <div id="notebook-<?php echo $notebook['id']; ?>" 
+                            class="notebook group relative bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 p-4">
+                            <div class="flex flex-col h-full">
+                                <div class="flex justify-between items-start mb-3">
                                     <div class="flex items-center space-x-3">
                                         <img src="<?php echo htmlspecialchars($notebook['profile_image']); ?>" 
                                             alt="Profile" 
-                                            class="w-10 h-10 rounded-full border-2 border-gray-200 shadow-sm">
+                                            class="w-8 h-8 rounded-full border-2 border-gray-200">
                                         <div>
-                                            <h3 class="font-serif font-semibold text-gray-800 text-lg leading-snug">
-                                                <?php echo htmlspecialchars($notebook['name']); ?>
-                                            </h3>
-                                            <p class="text-sm text-gray-500 italic mt-0.5">
-                                                by <?php echo htmlspecialchars($notebook['username']); ?>
-                                            </p>
+                                            <h3 class="text-lg font-semibold text-gray-800"><?php echo htmlspecialchars($notebook['name']); ?></h3>
+                                            <p class="text-xs text-gray-400">by <?php echo htmlspecialchars($notebook['username']); ?></p>
                                         </div>
                                     </div>
-                                    <?php if ($notebook['user_id'] == $user_id): ?>
-                                        <div class="relative">
-                                            <button onclick="toggleMenu(<?php echo $notebook['id']; ?>)" 
-                                                    class="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100 transition-colors">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div id="menu-<?php echo $notebook['id']; ?>" 
-                                                class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-10 ring-1 ring-black ring-opacity-5">
-                                                <a href="#" onclick="editPermissions(<?php echo $notebook['id']; ?>)" 
-                                                class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors rounded-t-lg">
-                                                    <i class="fas fa-user-lock mr-2"></i>Edit Permissions
-                                                </a>
-                                                <a href="#" onclick="removeShare(<?php echo $notebook['id']; ?>)" 
-                                                class="block px-4 py-2 text-red-600 hover:bg-red-50 transition-colors rounded-b-lg">
-                                                    <i class="fas fa-trash mr-2"></i>Remove Share
-                                                </a>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
                                 </div>
-                                <div class="flex items-center justify-between text-sm text-gray-500 mt-4 pt-4 border-t border-gray-100">
-                                    <span class="flex items-center bg-gray-50 px-3 py-1 rounded-full">
+
+                                <div class="text-xs text-gray-400 mt-2">
+                                    Created: <?php echo date('M d, Y', strtotime($notebook['created_at'])); ?>
+                                </div>
+
+                                <div class="flex items-center mt-3 mb-4">
+                                    <span class="text-sm flex items-center text-gray-500">
                                         <i class="fas <?php echo $notebook['permission_level'] === 'edit' ? 'fa-edit text-blue-500' : 'fa-eye text-green-500'; ?> mr-2"></i>
                                         <?php echo $notebook['permission_level'] === 'edit' ? 'Can Edit' : 'View Only'; ?>
                                     </span>
-                                    <span class="flex items-center">
-                                        <i class="far fa-clock mr-2"></i>
-                                        <?php echo date('M d, Y', strtotime($notebook['created_at'])); ?>
-                                    </span>
                                 </div>
+
+                                <a href="notes.php?notebook_id=<?php echo $notebook['id']; ?>" class="flex-grow">
+                                    <div class="text-sm text-gray-500">Click to view notes</div>
+                                </a>
+
+                                <?php if ($notebook['user_id'] == $user_id): ?>
+                                    <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                        <button onclick="editPermissions(<?php echo $notebook['id']; ?>)" 
+                                                class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+                                            <i class="fas fa-user-lock"></i>
+                                        </button>
+                                        
+                                        <form action="export_to_pdf.php" method="POST" class="inline-block" onclick="event.stopPropagation();">
+                                            <input type="hidden" name="notebook_id" value="<?php echo $notebook['id']; ?>">
+                                            <button type="submit" class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors">
+                                                <i class="fas fa-file-export"></i>
+                                            </button>
+                                        </form>
+
+                                        <button onclick="removeShare(<?php echo $notebook['id']; ?>)"
+                                                class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endwhile; ?>
                 </div>
             </div>
-
 
 
             <div id="settings" class="hidden flex-grow flex flex-col">
