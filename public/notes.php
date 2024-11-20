@@ -294,8 +294,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
                                         </div>
                                         <div class="flex items-center gap-2 text-sm text-gray-500">
                                             <span><?php echo date('M d, Y', strtotime($note['CreatedAt'])); ?></span>
-                                            <span>•</span>
-                                            <span class="truncate"><?php echo strip_tags(substr($note['Content'], 0, 50)); ?></span>
                                         </div>
                                     </div>
                                 </div>
