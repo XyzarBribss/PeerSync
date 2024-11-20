@@ -27,8 +27,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['notebook_name'])) {
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_notebook_id'])) {
     $notebook_id = intval($_POST['delete_notebook_id']);
     $conn->query("DELETE FROM notebooks WHERE id = $notebook_id");
-    $sql = "DELETE FROM notebooks WHERE id = $notebook_id";
-    if ($conn->query($sql) === TRUE) {
+    if ($conn->affected_rows > 0) {
         header("Location: notebook.php?message=Notebook deleted successfully");
         exit();
     } else {
@@ -37,41 +36,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_notebook_id']))
     }
 }
 
-// Handle notebook export
-
-
-// Fetch notebooks for the logged-in user
 $notebooks = [];
-$user_id = $_SESSION['user_id']; // Assuming user_id is stored in session
-$sql = "SELECT * FROM notebooks WHERE user_id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-if ($result && $result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $notebooks[] = $row;
-    }
-}
-$stmt->close();
-
-// Fetch user data from the database
-$query = "SELECT * FROM users WHERE id = ?";
-$stmt = $conn->prepare($query);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$user = $result->fetch_assoc();
-$stmt->close();
-
-// Fetch notebooks for the logged-in user with optional search query
-$notebooks = [];
-$user_id = $_SESSION['user_id']; // Assuming user_id is stored in session
-
-// Check if a search query is provided
+$user_id = $_SESSION['user_id'];
 $search_query = isset($_GET['search_query']) ? $conn->real_escape_string($_GET['search_query']) : '';
 
-// Adjust the SQL query based on the search query
 if ($search_query) {
     $sql = "SELECT * FROM notebooks WHERE user_id = ? AND name LIKE ?";
     $stmt = $conn->prepare($sql);
@@ -90,6 +58,34 @@ if ($result && $result->num_rows > 0) {
         $notebooks[] = $row;
     }
 }
+$stmt->close();
+
+// Handle notebook name update
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] === 'update_notebook') {
+    $notebook_id = intval($_POST['notebook_id']);
+    $new_name = str_replace("\'", "'", $_POST['new_name']);
+    $user_id = $_SESSION['user_id'];
+
+    $sql = "UPDATE notebooks SET name = ? WHERE id = ? AND user_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sii", $new_name, $notebook_id, $user_id);
+    
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['success' => false, 'error' => $stmt->error]);
+    }
+    
+    $stmt->close();
+    exit();
+}
+
+$query = "SELECT * FROM users WHERE id = ?";
+$stmt = $conn->prepare($query);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$user = $result->fetch_assoc();
 $stmt->close();
 
 ?>
@@ -151,7 +147,7 @@ $stmt->close();
         }
     </style> 
 </head>
-<body class="bg-gray-100 p-6">
+<body class="bg-gray-100 h-screen">
     <!-- Navbar -->
     <nav class="navbar bg-secondary-100 text-white  flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;">
         <div class="flex items-center">
@@ -216,47 +212,72 @@ $stmt->close();
                     </div>
                 </div>
 
-                <div id="notebooks-list" class="flex flex-wrap mt-10">
+                <div id="edit-notebook-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden flex items-center justify-center z-50">
+                    <div class="relative mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                        <div class="mt-3 text-center">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">Edit Notebook Name</h3>
+                            <form id="updateNotebookForm" class="mt-4">
+                                <input type="hidden" id="notebook_id" name="notebook_id">
+                                <input type="text" id="notebookName" name="new_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                <div class="mt-4 flex justify-end space-x-3">
+                                    <button type="button" onclick="closeModal()" class="inline-flex justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                                    <button type="submit" id="saveButton" class="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+
+    <!--Notebook List-->
+    <div id="notebooks-list" class="flex flex-wrap mt-10">
     <div class="grid grid-cols-3 gap-6">
         <?php if (!empty($notebooks)): ?>
             <?php foreach ($notebooks as $notebook): ?>
-                <a href="notes.php?notebook_id=<?php echo $notebook['id']; ?>" class="notebook group relative hover:shadow-lg transition-shadow block">
-                    <div class="notebook-header">
-                        <h3 class="text-lg font-semibold"><?php echo htmlspecialchars($notebook['name']); ?></h3>
-                    </div>
-                    <div class="notebook-content">
-                        <p class="text-sm text-gray-500">Click to open notebook</p>
-                        <div class="flex justify-between mt-4 absolute bottom-0 left-0 right-0 p-4">
-                            <form action="notebook.php" method="POST">
-                                <input type="hidden" name="delete_notebook_id" value="<?php echo $notebook['id']; ?>">
-                                <button type="submit" class="text-red-500 hover:text-red-700">
-                                    <i class="fas fa-trash-alt"></i>
-                                    <span class="sr-only">Delete notebook</span>
-                                    
-                                </button>
-                            </form>
+                <div id="notebook-<?php echo $notebook['id']; ?>" class="notebook group relative bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 p-4">
+                    <div class="flex flex-col h-full">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 id="title-<?php echo $notebook['id']; ?>" class="text-lg font-semibold notebook-title">
+                                <?= htmlspecialchars(str_replace("\'", "'", $notebook['name'])) ?>
+                            </h3>
+                        </div>
 
-                            <form action="export_to_pdf.php" method="POST">
+                        <div class="text-xs text-gray-400 mt-2">
+                            Created: <?= date('M d, Y', strtotime($notebook['created_at'])) ?>
+                        </div>
+
+                        <a href="notes.php?notebook_id=<?php echo $notebook['id']; ?>" class="flex-grow">
+                            <div class="text-sm text-gray-500">Click to view notes</div>
+                        </a>
+
+                        <div class=" flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <button onclick="event.stopPropagation(); editNotebook(<?php echo $notebook['id']; ?>)" 
+                                    class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            
+                            <form action="export_to_pdf.php" method="POST" class="inline-block" onclick="event.stopPropagation();">
                                 <input type="hidden" name="notebook_id" value="<?php echo $notebook['id']; ?>">
-                                <button type="submit" class="text-blue-500 hover:text-blue-700">
+                                <button type="submit" class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors">
                                     <i class="fas fa-file-export"></i>
-                                    <span class="sr-only">Export notebook</span>
                                 </button>
                             </form>
 
+                            <form action="notebook.php" method="POST" class="inline-block" onclick="event.stopPropagation();">
+                                <input type="hidden" name="delete_notebook_id" value="<?php echo $notebook['id']; ?>">
+                                <button type="submit" class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
                         </div>
                     </div>
-                </a>
+                </div>
             <?php endforeach; ?>
         <?php else: ?>
             <p>No notebooks found.</p>
         <?php endif; ?>
     </div>
 </div>
-            </div>
-        </div>
-    </div>
-
     <script>
         function showAddNotebookModal() {
             document.getElementById('add-notebook-modal').classList.remove('hidden');
@@ -266,28 +287,104 @@ $stmt->close();
             document.getElementById('add-notebook-modal').classList.add('hidden');
         }
 
-        // Toggle dropdown menu
         document.getElementById('profileImage').addEventListener('click', function() {
             const dropdownMenu = this.nextElementSibling;
             dropdownMenu.classList.toggle('hidden');
         });
 
         function searchNotebooks() {
-    const searchQuery = document.getElementById('searchBox').value.toLowerCase();
-    const notebooks = document.querySelectorAll('.notebook');
+        const searchQuery = document.getElementById('searchBox').value.toLowerCase();
+        const notebooksContainer = document.querySelector('.grid');
+        const notebooks = document.querySelectorAll('.notebook');
 
-    notebooks.forEach(notebook => {
-        const notebookName = notebook.querySelector('.notebook-header h3').innerText.toLowerCase();
-        if (notebookName.includes(searchQuery)) {
-            notebook.style.display = 'block';
+        notebooks.forEach(notebook => {
+            const notebookTitle = notebook.querySelector('.notebook-title').textContent.trim().toLowerCase();
+            
+            if (notebookTitle.includes(searchQuery)) {
+                notebook.classList.remove('hidden');
+                notebook.style.display = 'block';
+            } else {
+                notebook.classList.add('hidden');
+                notebook.style.display = 'none';
+            }
+        });
+
+        // Show "No notebooks found" message if no results
+        const visibleNotebooks = document.querySelectorAll('.notebook:not(.hidden)');
+        const noResultsMessage = document.querySelector('.no-results');
+        
+        if (visibleNotebooks.length === 0 && searchQuery !== '') {
+            if (!noResultsMessage) {
+                const message = document.createElement('p');
+                message.className = 'no-results col-span-3 text-center text-gray-500 py-4';
+                message.textContent = 'No notebooks found matching your search.';
+                notebooksContainer.appendChild(message);
+            }
         } else {
-            notebook.style.display = 'none';
+            if (noResultsMessage) {
+                noResultsMessage.remove();
+            }
         }
-    });
+    }
+
+    // Add event listener for real-time search
+    document.getElementById('searchBox').addEventListener('input', searchNotebooks);
+
+function closeModal() {
+    document.getElementById('edit-notebook-modal').classList.add('hidden');
 }
 
+function editNotebook(notebookId) {
+    const notebookNameElement = document.querySelector(`#notebook-${notebookId} .notebook-title`);
+    const currentName = notebookNameElement.textContent.trim();
+    
+    document.getElementById('notebook_id').value = notebookId;
+    document.getElementById('notebookName').value = currentName;
 
-        // Fetch the list of bubbles the user has joined
+    document.getElementById('edit-notebook-modal').classList.remove('hidden');
+}
+
+document.getElementById('updateNotebookForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const button = document.getElementById('saveButton');
+    const input = document.getElementById('notebookName');
+    const notebookId = document.getElementById('notebook_id').value;
+    
+    button.disabled = true;
+    button.textContent = 'Saving...';
+
+    try {
+        const formData = new FormData();
+        formData.append('notebook_id', notebookId);
+        formData.append('new_name', input.value);
+        formData.append('action', 'update_notebook');
+
+        const response = await fetch('notebook.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update notebook');
+        }
+
+        const notebookNameElement = document.querySelector(`#notebook-${notebookId} .notebook-title`);
+        if (notebookNameElement) {
+            notebookNameElement.textContent = input.value;
+        }
+
+        document.getElementById('edit-notebook-modal').classList.add('hidden');
+        
+    } catch (error) {
+        console.error('Error updating notebook:', error);
+        alert('Failed to update notebook name');
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Save Changes';
+    }
+});
+
+
         function fetchJoinedBubbles() {
             fetch("joinedBubble.php")
             .then(response => response.json())
