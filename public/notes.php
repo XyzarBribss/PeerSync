@@ -558,8 +558,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
     }
 }
 
-// Add event listener for real-time search
-document.getElementById('searchNotes').addEventListener('input', searchNotes);
+        // Fetch the list of bubbles the user has joined
         function fetchJoinedBubbles() {
             fetch("joinedBubble.php")
             .then(response => response.json())
@@ -568,13 +567,28 @@ document.getElementById('searchNotes').addEventListener('input', searchNotes);
                 bubbleList.innerHTML = "";
                 data.bubbles.forEach(bubble => {
                     const bubbleItem = document.createElement("li");
-                    bubbleItem.className = "bubble-container";
+                    bubbleItem.className = "bubble-container relative";
                     bubbleItem.innerHTML = `
-                        <a href="bubblePage.php?bubble_id=${bubble.id}" class="block p-2 text-center hover:bg-gray-700">
+                        <a href="bubblePage.php?bubble_id=${bubble.id}" class="block p-2 text-center transform hover:scale-105 transition-transform duration-200 relative">
                             <img src="data:image/jpeg;base64,${bubble.profile_image}" alt="${bubble.bubble_name}" class="w-10 h-10 rounded-full mx-auto">
+                            <div class="bubble-name-modal absolute left-full top-1/2 transform -translate-y-1/2 ml-2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 transition-opacity duration-200">${bubble.bubble_name}</div>
                         </a>
                     `;
                     bubbleList.appendChild(bubbleItem);
+                });
+
+                // Add event listeners to show/hide the modal on hover
+                document.querySelectorAll('.bubble-container a').forEach(anchor => {
+                    anchor.addEventListener('mouseenter', function() {
+                        const modal = this.querySelector('.bubble-name-modal');
+                        modal.classList.remove('opacity-0');
+                        modal.classList.add('opacity-100');
+                    });
+                    anchor.addEventListener('mouseleave', function() {
+                        const modal = this.querySelector('.bubble-name-modal');
+                        modal.classList.remove('opacity-100');
+                        modal.classList.add('opacity-0');
+                    });
                 });
             })
             .catch(error => {
