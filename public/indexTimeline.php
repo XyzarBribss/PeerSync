@@ -276,7 +276,7 @@ $stmt->close();
                     $like_count = $count_result->fetch_assoc()['count'];
                     $count_stmt->close();
                     ?>
-                    <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden mb-8">
+                    <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden mb-8" data-post-id="<?= $post['id'] ?>">
                         <!-- Post Header -->
                         <div class="p-6">
                             <div class="flex items-center justify-between mb-4">
@@ -295,9 +295,28 @@ $stmt->close();
                                         </div>
                                     </div>
                                 </div>
-                                <button class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
-                                    <i class="fas fa-ellipsis-h"></i>
-                                </button>
+                                <div class="relative">
+                                    <button class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors" onclick="togglePostMenu(<?= $post['id'] ?>)">
+                                        <i class="fas fa-ellipsis-h"></i>
+                                    </button>
+                                    <div id="postMenu-<?= $post['id'] ?>" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
+                                        <?php if ($post['user_id'] == $logged_in_user_id): ?>
+                                            <!-- Edit and Delete options for post owner -->
+                                            <a href="editPost.php?post_id=<?= $post['id'] ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                <i class="fas fa-edit mr-2"></i>Edit Post
+                                            </a>
+                                            <button onclick="deletePost(<?= $post['id'] ?>)" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                                <i class="fas fa-trash-alt mr-2"></i>Delete Post
+                                            </button>
+                                        <?php else: ?>
+                                            <!-- Report option for other users' posts -->
+                                            <button onclick="openReportModal(<?= $post['id'] ?>, '<?= htmlspecialchars($post['message'], ENT_QUOTES) ?>', '<?= htmlspecialchars($post['bubble_name'], ENT_QUOTES) ?>', <?= $post['user_id'] ?>)" 
+                                                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                <i class="fas fa-flag mr-2"></i>Report Post
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Post Content -->
@@ -346,13 +365,6 @@ $stmt->close();
                                         <span class="text-sm">Share</span>
                                     </button>
                                 </div>
-
-                                <!-- Report Button -->
-                                <button onclick="openReportModal(<?= $post['id'] ?>, '<?= htmlspecialchars($post['message']) ?>', '<?= htmlspecialchars($post['bubble_name']) ?>', <?= $post['user_id'] ?>)" 
-                                        class="flex items-center space-x-2 text-gray-400 hover:text-red-500 transition-colors text-sm">
-                                    <i class="fas fa-flag"></i>
-                                    <span>Report</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -804,5 +816,100 @@ $stmt->close();
         }
     });
 </script>
+
+<script>
+    // Function to toggle post menu dropdown
+    function togglePostMenu(postId) {
+        const menu = document.getElementById(`postMenu-${postId}`);
+        // Close all other open menus first
+        document.querySelectorAll('[id^="postMenu-"]').forEach(m => {
+            if (m.id !== `postMenu-${postId}`) {
+                m.classList.add('hidden');
+            }
+        });
+        menu.classList.toggle('hidden');
+    }
+
+    // Close post menus when clicking outside
+    document.addEventListener('click', function(event) {
+        const menuButton = event.target.closest('.relative');
+        if (!menuButton) {
+            document.querySelectorAll('[id^="postMenu-"]').forEach(menu => {
+                menu.classList.add('hidden');
+            });
+        }
+    });
+
+    // Function to handle post deletion
+    function deletePost(postId) {
+        if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+            fetch(`deletePost.php?post_id=${postId}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the post element from DOM and show success message
+                    const postElement = document.querySelector(`[data-post-id="${postId}"]`).closest('.bg-white');
+                    postElement.remove();
+                    // Show success message
+                    const successMessage = document.createElement('div');
+                    successMessage.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4';
+                    successMessage.innerHTML = 'Post deleted successfully';
+                    document.querySelector('.p-4.mx-auto').insertBefore(successMessage, document.querySelector('.mb-4'));
+                    // Remove success message after 3 seconds
+                    setTimeout(() => successMessage.remove(), 3000);
+                } else {
+                    alert(data.error || 'Failed to delete post. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the post.');
+            });
+        }
+    }
+</script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('.like-button').click(function() {
+            const button = $(this);
+            const postId = button.data('post-id');
+
+            $.ajax({
+                url: 'toggle_like.php',
+                type: 'POST',
+                data: { post_id: postId },
+                success: function(response) {
+                    try {
+                        const data = JSON.parse(response);
+                        if (data.success) {
+                            // Toggle the liked state
+                            button.toggleClass('liked');
+
+                            // Update the like count text
+                            const likeCountText = data.likes === 1 ? '1 Like' : data.likes + ' Likes';
+                            button.find('span').text(likeCountText);
+
+                            // Add animation effect
+                            button.find('i').addClass('animate-bounce');
+                            setTimeout(() => {
+                                button.find('i').removeClass('animate-bounce');
+                            }, 1000);
+                        } else {
+                            console.error('Like toggle failed:', data.message);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing response:', e);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Ajax request failed:', error);
+                }
+            });
+        });
+    });
+    </script>
 </body>
 </html>

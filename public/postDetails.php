@@ -255,27 +255,35 @@ function joinBubble() {
         <div class="p-4 mx-auto w-full max-w-4xl">
             <div class="space-y-4">
                 <div class="bg-white p-4 shadow rounded mb-4">
-                    <div class="flex items-center mb-4">
-                        <img src="<?= htmlspecialchars($post['user_profile_image']) ?>" alt="<?= htmlspecialchars($post['username']) ?>" class="w-10 h-10 rounded-full mr-3">
-                        <div>
-                            <div class="text-gray-700 font-bold"><?= htmlspecialchars($post['username']) ?></div>
-                            <div class="text-gray-500 text-sm"><?= htmlspecialchars($post['bubble_name']) ?> • <?= date('F j, Y, g:i a', strtotime($post['created_at'])) ?></div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <img src="<?= htmlspecialchars($post['user_profile_image']) ?>" alt="<?= htmlspecialchars($post['username']) ?>" class="w-10 h-10 rounded-full mr-3">
+                            <div>
+                                <div class="text-gray-700 font-bold"><?= htmlspecialchars($post['username']) ?></div>
+                                <div class="text-gray-500 text-sm"><?= htmlspecialchars($post['bubble_name']) ?> • <?= date('F j, Y, g:i a', strtotime($post['created_at'])) ?></div>
+                            </div>
                         </div>
-                        <div class="relative ml-auto">
-                            <?php if ($post['user_id'] == $user_id): ?>
-                                <button type="button" class="inline-flex justify-center shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none" id="menu-button-<?= $post['id'] ?>" aria-expanded="false" aria-haspopup="menu">
-                                    <i class="fas fa-ellipsis-h"></i>
-                                </button>
-                                <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="menu-button-<?= $post['id'] ?>" tabindex="-1" id="menu-<?= $post['id'] ?>">
-                                    <div class="py-1" role="none">
-                                    <form action="postDetails.php?post_id=<?= htmlspecialchars($post_id) ?>" method="post">
-                                            <a href="#" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="menu-item-3" onclick="openEditModal(<?= htmlspecialchars($post_id) ?>)">Edit</a>
-                                            <input type="hidden" name="delete_post_id" value="<?= htmlspecialchars($post_id) ?>">
-                                            <button type="submit" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="menu-item-2">Delete</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
+                        <div class="relative">
+                            <button class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors" onclick="togglePostMenu()">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <div id="postMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
+                                <?php if ($post['user_id'] == $user_id): ?>
+                                    <!-- Edit and Delete options for post owner -->
+                                    <button onclick="openEditModal()" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-edit mr-2"></i>Edit Post
+                                    </button>
+                                    <button onclick="deletePost(<?= $post['id'] ?>)" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                        <i class="fas fa-trash-alt mr-2"></i>Delete Post
+                                    </button>
+                                <?php else: ?>
+                                    <!-- Report option for other users' posts -->
+                                    <button onclick="openReportModal(<?= $post['id'] ?>, '<?= htmlspecialchars($post['message']) ?>', '<?= htmlspecialchars($post['bubble_name']) ?>', <?= $post['user_id'] ?>)" 
+                                            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-flag mr-2"></i>Report Post
+                                    </button>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                     <a href="postDetails.php?post_id=<?= $post['id'] ?>" class="block">
@@ -905,5 +913,77 @@ window.onclick = function(event) {
     }
 }
     </script>
+
+    <script>
+    // Function to toggle post menu dropdown
+    function togglePostMenu() {
+        const menu = document.getElementById('postMenu');
+        menu.classList.toggle('hidden');
+    }
+
+    // Close post menu when clicking outside
+    document.addEventListener('click', function(event) {
+        const menu = document.getElementById('postMenu');
+        const menuButton = document.querySelector('.fa-ellipsis-h').parentElement;
+        if (!menuButton.contains(event.target) && !menu.contains(event.target)) {
+            menu.classList.add('hidden');
+        }
+    });
+
+    // Function to handle post deletion
+    function deletePost(postId) {
+        if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+            const formData = new FormData();
+            formData.append('delete_post_id', postId);
+
+            fetch('postDetails.php?post_id=' + postId, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    window.location.href = 'indexTimeline.php';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the post.');
+            });
+        }
+    }
+
+    // Function to open edit modal
+    function openEditModal() {
+        document.getElementById('editPostModal').style.display = 'block';
+        document.getElementById('postMenu').classList.add('hidden');
+    }
+
+    // Function to close edit modal
+    function closeEditModal() {
+        document.getElementById('editPostModal').style.display = 'none';
+    }
+
+    // Function to open report modal
+    function openReportModal(postId, postContent, bubbleName, postOwnerId) {
+        const reportForm = document.getElementById('reportForm');
+        reportForm.setAttribute('data-post-id', postId);
+        reportForm.setAttribute('data-post-content', postContent);
+        reportForm.setAttribute('data-bubble-name', bubbleName);
+        reportForm.setAttribute('data-post-owner-id', postOwnerId);
+        document.getElementById('reportModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    // Function to close report modal
+    function closeReportModal() {
+        document.getElementById('reportModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        document.getElementById('reportForm').reset();
+        document.getElementById('otherDetailsContainer').classList.add('hidden');
+    }
+</script>
 </body>
 </html>
