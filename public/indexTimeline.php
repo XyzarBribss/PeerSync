@@ -163,12 +163,16 @@ $stmt->close();
 </head>
 <body class="bg-blue-50">
     <!-- Navbar -->
-    <nav class="navbar bg-secondary-100 text-white  flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;}">
+    <nav class="navbar bg-secondary-100 text-white  flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;">
         <div class="flex items-center">
             <a href="indexTimeline.php"><img src="../public/ps.png" alt="Peerync Logo" class="h-18 w-16"></a>
             <span class="text-2xl font-bold">PeerSync</span>
         </div>
-        <div class="flex items-center">
+        <div class="flex items-center space-x-4">
+            <!-- Notifications Button -->
+            <button id="notificationsButton" class="text-white hover:text-gray-200">
+                <i class="fas fa-bell text-xl"></i>
+            </button>
             <a href="exploreBubble.php" class="ml-4 hover:bg-blue-400 p-2 rounded">
                 <i class="fas fa-globe fa-lg"></i>
             </a>
@@ -344,7 +348,7 @@ $stmt->close();
                                 </div>
 
                                 <!-- Report Button -->
-                                <button onclick="openReportModal()" 
+                                <button onclick="openReportModal(<?= $post['id'] ?>, '<?= htmlspecialchars($post['message']) ?>', '<?= htmlspecialchars($post['bubble_name']) ?>', <?= $post['user_id'] ?>)" 
                                         class="flex items-center space-x-2 text-gray-400 hover:text-red-500 transition-colors text-sm">
                                     <i class="fas fa-flag"></i>
                                     <span>Report</span>
@@ -448,6 +452,19 @@ $stmt->close();
         </div>
     </div>
 
+    <!-- Notifications Modal -->
+    <div id="notificationsModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Notifications</h2>
+                <span id="closeNotificationsModal" class="close cursor-pointer">&times;</span>
+            </div>
+            <div id="notificationsList" class="space-y-4">
+                <!-- Notifications will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+
     <!-- Report Modal -->
     <div id="reportModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
         <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 md:mx-auto">
@@ -466,7 +483,7 @@ $stmt->close();
                 <p class="text-gray-600 mb-6">
                     Please select a reason for reporting this content. Your report will help us maintain a safe community.
                 </p>
-                <form id="reportForm" onsubmit="handleReport(event)" class="space-y-4">
+                <form id="reportForm" onsubmit="handleReport(event)" data-post-id="" data-post-content="" data-bubble-name="" data-post-owner-id="">
                     <div class="space-y-3">
                         <label class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200">
                             <input type="radio" name="reportReason" value="inappropriate" class="h-4 w-4 text-blue-600 focus:ring-blue-500" required>
@@ -528,12 +545,93 @@ $stmt->close();
             postModal.style.display = 'none';
         }
 
+        // Close modal when clicking outside
         window.onclick = function(event) {
             if (event.target == postModal) {
                 postModal.style.display = 'none';
             }
         }
 
+        // Report modal functionality
+        function openReportModal(postId, postContent, bubbleName, postOwnerId) {
+            const reportForm = document.getElementById('reportForm');
+            reportForm.setAttribute('data-post-id', postId);
+            reportForm.setAttribute('data-post-content', postContent);
+            reportForm.setAttribute('data-bubble-name', bubbleName);
+            reportForm.setAttribute('data-post-owner-id', postOwnerId);
+            document.getElementById('reportModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeReportModal() {
+            document.getElementById('reportModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            // Reset form
+            document.getElementById('reportForm').reset();
+            document.getElementById('otherDetailsContainer').classList.add('hidden');
+        }
+
+        // Handle form submission
+        function handleReport(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const reason = formData.get('reportReason');
+            const details = formData.get('otherDetails');
+            const postId = document.getElementById('reportForm').getAttribute('data-post-id');
+            const postContent = document.getElementById('reportForm').getAttribute('data-post-content');
+            const bubbleName = document.getElementById('reportForm').getAttribute('data-bubble-name');
+            const postOwnerId = document.getElementById('reportForm').getAttribute('data-post-owner-id');
+            
+            // Prepare the report data
+            const reportFormData = new FormData();
+            reportFormData.append('post_id', postId);
+            reportFormData.append('post_owner_id', postOwnerId);
+            reportFormData.append('report_reason', reason === 'other' ? details : reason);
+            reportFormData.append('post_content', postContent);
+            reportFormData.append('bubble_name', bubbleName);
+
+            // Send the report to the server
+            fetch('Admin_Page/insert_report.php', {
+                method: 'POST',
+                body: reportFormData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Thank you for your report. We will review it shortly.');
+                } else {
+                    alert(data.error || 'Failed to submit report. Please try again.');
+                }
+                closeReportModal();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while submitting the report. Please try again.');
+                closeReportModal();
+            });
+        }
+
+        // Handle showing/hiding the "Other" details textarea
+        document.querySelectorAll('input[name="reportReason"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const otherDetails = document.getElementById('otherDetailsContainer');
+                if (this.value === 'other') {
+                    otherDetails.classList.remove('hidden');
+                } else {
+                    otherDetails.classList.add('hidden');
+                }
+            });
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('reportModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeReportModal();
+            }
+        });
+    </script>
+
+    <script>
         // Modal functionality for creating a bubble
         const bubbleModal = document.getElementById('createBubbleModal');
         const bubbleBtn = document.getElementById('createBubbleButton');
@@ -553,97 +651,46 @@ $stmt->close();
             }
         }
 
-        // Report modal functionality
-        function openReportModal() {
-            document.getElementById('reportModal').classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
+        // Fetch the list of bubbles the user has joined
+        function fetchJoinedBubbles() {
+            fetch("joinedBubble.php")
+            .then(response => response.json())
+            .then(data => {
+                const bubbleList = document.getElementById("bubble-list");
+                bubbleList.innerHTML = "";
+                data.bubbles.forEach(bubble => {
+                    const bubbleItem = document.createElement("li");
+                    bubbleItem.className = "bubble-container relative";
+                    bubbleItem.innerHTML = `
+                        <a href="bubblePage.php?bubble_id=${bubble.id}" class="block p-2 text-center transform hover:scale-105 transition-transform duration-200 relative">
+                            <img src="data:image/jpeg;base64,${bubble.profile_image}" alt="${bubble.bubble_name}" class="w-10 h-10 rounded-full mx-auto">
+                            <div class="bubble-name-modal absolute left-full top-1/2 transform -translate-y-1/2 ml-2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 transition-opacity duration-200">${bubble.bubble_name}</div>
+                        </a>
+                    `;
+                    bubbleList.appendChild(bubbleItem);
+                });
+
+                // Add event listeners to show/hide the modal on hover
+                document.querySelectorAll('.bubble-container a').forEach(anchor => {
+                    anchor.addEventListener('mouseenter', function() {
+                        const modal = this.querySelector('.bubble-name-modal');
+                        modal.classList.remove('opacity-0');
+                        modal.classList.add('opacity-100');
+                    });
+                    anchor.addEventListener('mouseleave', function() {
+                        const modal = this.querySelector('.bubble-name-modal');
+                        modal.classList.remove('opacity-100');
+                        modal.classList.add('opacity-0');
+                    });
+                });
+            })
+            .catch(error => {
+                console.error("Error fetching joined bubbles:", error);
+            });
         }
 
-        function closeReportModal() {
-            document.getElementById('reportModal').classList.add('hidden');
-            document.body.style.overflow = 'auto';
-            // Reset form
-            document.getElementById('reportForm').reset();
-            document.getElementById('otherDetailsContainer').classList.add('hidden');
-        }
-
-        // Handle showing/hiding the "Other" details textarea
-        document.querySelectorAll('input[name="reportReason"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                const otherDetails = document.getElementById('otherDetailsContainer');
-                if (this.value === 'other') {
-                    otherDetails.classList.remove('hidden');
-                } else {
-                    otherDetails.classList.add('hidden');
-                }
-            });
-        });
-
-        // Handle form submission
-        function handleReport(event) {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            const reason = formData.get('reportReason');
-            const details = formData.get('otherDetails');
-            
-            // Here you would typically send this data to your server
-            console.log('Report submitted:', { reason, details });
-            
-            // Show success message
-            alert('Thank you for your report. We will review it shortly.');
-            
-            // Close the modal
-            closeReportModal();
-        }
-
-        // Close modal when clicking outside
-        document.getElementById('reportModal').addEventListener('click', function(event) {
-            if (event.target === this) {
-                closeReportModal();
-            }
-        });
-
-// Fetch the list of bubbles the user has joined
-function fetchJoinedBubbles() {
-    fetch("joinedBubble.php")
-    .then(response => response.json())
-    .then(data => {
-        const bubbleList = document.getElementById("bubble-list");
-        bubbleList.innerHTML = "";
-        data.bubbles.forEach(bubble => {
-            const bubbleItem = document.createElement("li");
-            bubbleItem.className = "bubble-container relative";
-            bubbleItem.innerHTML = `
-                <a href="bubblePage.php?bubble_id=${bubble.id}" class="block p-2 text-center transform hover:scale-105 transition-transform duration-200 relative">
-                    <img src="data:image/jpeg;base64,${bubble.profile_image}" alt="${bubble.bubble_name}" class="w-10 h-10 rounded-full mx-auto">
-                    <div class="bubble-name-modal absolute left-full top-1/2 transform -translate-y-1/2 ml-2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 transition-opacity duration-200">${bubble.bubble_name}</div>
-                </a>
-            `;
-            bubbleList.appendChild(bubbleItem);
-        });
-
-        // Add event listeners to show/hide the modal on hover
-        document.querySelectorAll('.bubble-container a').forEach(anchor => {
-            anchor.addEventListener('mouseenter', function() {
-                const modal = this.querySelector('.bubble-name-modal');
-                modal.classList.remove('opacity-0');
-                modal.classList.add('opacity-100');
-            });
-            anchor.addEventListener('mouseleave', function() {
-                const modal = this.querySelector('.bubble-name-modal');
-                modal.classList.remove('opacity-100');
-                modal.classList.add('opacity-0');
-            });
-        });
-    })
-    .catch(error => {
-        console.error("Error fetching joined bubbles:", error);
-    });
-}
-
-document.addEventListener("DOMContentLoaded", fetchJoinedBubbles);
+        document.addEventListener("DOMContentLoaded", fetchJoinedBubbles);
     </script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
     $(document).ready(function() {
         $('.like-button').click(function() {
@@ -684,5 +731,78 @@ document.addEventListener("DOMContentLoaded", fetchJoinedBubbles);
         });
     });
     </script>
+
+    <script>
+        // Notifications Modal functionality
+        const notificationsModal = document.getElementById('notificationsModal');
+        const notificationsBtn = document.getElementById('notificationsButton');
+        const closeNotificationsModal = document.getElementById('closeNotificationsModal');
+
+        notificationsBtn.onclick = function() {
+            notificationsModal.style.display = "block";
+        }
+
+        closeNotificationsModal.onclick = function() {
+            notificationsModal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target == notificationsModal) {
+                notificationsModal.style.display = "none";
+            }
+        }
+    </script>
+
+    <!-- Dismissed Report Notification Modal -->
+<div id="dismissedReportModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header flex justify-between items-center mb-4">
+            <h5 class="modal-title text-xl font-bold text-gray-800">Report Status</h5>
+            <span class="close-button cursor-pointer text-2xl" id="closeDismissedReportModal">&times;</span>
+        </div>
+        <div class="modal-body p-4">
+            <p class="text-gray-700">The report you have submitted does not contain any issues, thank you for making our community clean.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Check for dismissed reports on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the dismissed report status from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const reportStatus = urlParams.get('report_status');
+        
+        if (reportStatus === 'dismissed') {
+            const dismissedReportModal = document.getElementById('dismissedReportModal');
+            dismissedReportModal.style.display = 'block';
+            
+            // Close modal after 3 seconds
+            setTimeout(() => {
+                dismissedReportModal.style.display = 'none';
+                // Remove the parameter from URL
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }, 3000);
+        }
+
+        // Close modal when clicking the close button
+        document.getElementById('closeDismissedReportModal').onclick = function() {
+            document.getElementById('dismissedReportModal').style.display = 'none';
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('dismissedReportModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+        }
+    });
+</script>
 </body>
 </html>

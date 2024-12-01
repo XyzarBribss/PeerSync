@@ -1,24 +1,37 @@
 <?php
-require_once 'config.php';
+require_once '../config.php';
 
+// Set JSON header before any output
+header('Content-Type: application/json');
+
+// Check connection
 if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+    echo json_encode(['error' => 'Database connection failed']);
+    exit;
 }
 
-// Query to fetch user data
-$sql = "SELECT id, username, email, status, created_at FROM users";
-$result = $conn->query($sql);
+try {
+    // Query to fetch user data without ID
+    $sql = "SELECT username, email, status, created_at FROM users";
+    $result = $conn->query($sql);
 
-$users = array();
+    if (!$result) {
+        throw new Exception($conn->error);
+    }
 
-if ($result->num_rows > 0) {
-    // Fetch each row and add it to the users array
+    $users = array();
     while ($row = $result->fetch_assoc()) {
+        // Convert any null values to empty strings to avoid JSON encoding issues
+        foreach ($row as $key => $value) {
+            $row[$key] = $value === null ? "" : $value;
+        }
         $users[] = $row;
     }
-}
 
-// Output the users array as JSON
-echo json_encode($users);
-$conn->close();
-?>
+    echo json_encode($users);
+
+} catch (Exception $e) {
+    echo json_encode(['error' => $e->getMessage()]);
+} finally {
+    $conn->close();
+}

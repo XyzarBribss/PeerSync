@@ -143,7 +143,7 @@ $notebook_stmt->close();
     </div>
 
     <div class="main-content flex-grow flex overflow-hidden mt-16">
-        <div class="sidebarb w-64 bg-blue-50 text-sky-700 p-5 overflow-y-auto flex-shrink-0 ml-20 shadow-lg transition-transform transform" style="margin-left: 64px;">
+    <div class="sidebarb w-64 bg-blue-50 text-sky-700 p-5 overflow-y-auto flex-shrink-0 ml-20 shadow-lg transition-transform transform" style="margin-left: 64px;">
             <?php if ($bubble): ?>
                 <img src="data:image/jpeg;base64,<?php echo base64_encode($bubble['profile_image']); ?>" alt="<?php echo htmlspecialchars($bubble['bubble_name']); ?>" class="w-full h-40 rounded-lg object-cover border-2 border-gray-300 mb-4">
                 <h2 class="text-xl font-bold mb-4"><?php echo htmlspecialchars($bubble['bubble_name']); ?></h2>
@@ -163,7 +163,7 @@ $notebook_stmt->close();
                 </li>
                 <li>
                     <a href="#" class="block p-2 rounded hover:bg-sky-200 transition duration-300" onclick="showContent('notebook')">
-                        <i class="fas fa-book mr-2"></i> Notebook Collab
+                        <i class="fas fa-book mr-2"></i> Notebook
                     </a>
                 </li>
                 <?php if ($bubble['creator_id'] == $user_id): ?>
@@ -174,12 +174,15 @@ $notebook_stmt->close();
                     </li>
                 <?php endif; ?>
             </ul>
-            <h3 class="font-semibold mt-6">Bubble Members</h3>
-            <ul class="space-y-2 mt-4" id="member-list">
+            <div class="flex items-center justify-between cursor-pointer mt-6" onclick="toggleMemberList()">
+                <h3 class="font-semibold">Bubble Members</h3>
+                <i id="memberArrow" class="fas fa-chevron-right text-sm transition-transform duration-200"></i>
+            </div>
+            <ul class="space-y-1 mt-2 hidden" id="member-list">
                 <?php while ($member = $members->fetch_assoc()): ?>
-                    <li class="flex items-center space-x-2 cursor-pointer" data-member-id="<?php echo $member['id']; ?>">
-                        <img src="<?php echo htmlspecialchars($member['profile_image']); ?>" alt="Profile Image" class="w-8 h-8 rounded-full">
-                        <span><?php echo htmlspecialchars($member['username']); ?></span>
+                    <li class="flex items-center space-x-2 cursor-pointer p-1 hover:bg-blue-100 rounded-md transition-all duration-200" data-member-id="<?php echo $member['id']; ?>">
+                        <img src="<?php echo htmlspecialchars($member['profile_image']); ?>" alt="Profile Image" class="w-6 h-6 rounded-full">
+                        <span class="text-sm"><?php echo htmlspecialchars($member['username']); ?></span>
                     </li>
                 <?php endwhile; ?>
                 <?php $stmt->close(); ?>
@@ -188,29 +191,71 @@ $notebook_stmt->close();
 
         <div class="content-container flex-grow flex flex-col h-full p-5 overflow-y-auto bg-white">
 
-            <div id="chat" class="hidden flex flex-col h-full">
-            <h2 class="text-2xl font-bold mb-4">Chat</h2>
+        <div id="chat" class="hidden flex flex-col h-full">
+                <div class="bg-white border-b border-gray-200 p-4 flex items-center justify-between mb-2 shadow-md rounded-lg">
+                    <div class="flex items-center space-x-4">
+                        <div class="relative group">
+                            <img src="data:image/jpeg;base64,<?php echo base64_encode($bubble['profile_image']); ?>" 
+                                 alt="<?php echo htmlspecialchars($bubble['bubble_name']); ?>" 
+                                 class="w-12 h-12 rounded-full object-cover shadow-md ring-2 ring-offset-2 ring-blue-200 group-hover:ring-blue-300 transition-all duration-300">
+                            <div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800 hover:text-blue-600 transition-colors duration-200">
+                                <?php echo htmlspecialchars($bubble['bubble_name']); ?>
+                            </h2>
+                            <p class="text-xs text-gray-500"><?php echo $members->num_rows; ?> members</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200">
+                            <i class="fas fa-search text-lg"></i>
+                        </button>
+                        <div class="relative">
+                            <button onclick="toggleOptionsMenu()" class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200">
+                                <i class="fas fa-ellipsis-v text-lg"></i>
+                            </button>
+                            <div id="options-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                                <div class="py-1">
+                                    <a href="#" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                        <i class="fas fa-trash-alt mr-3"></i>
+                                        Delete Bubble
+                                    </a>
+                                    <a href="#" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                        <i class="fas fa-sign-out-alt mr-3"></i>
+                                        Leave Bubble
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div id="chat-messages" class="flex-grow space-y-4 p-2 bg-white overflow-y-auto">
                     <!-- Chat messages will be populated by JavaScript -->
                     <?php foreach ($messages as $message): ?>
-                        <div class="p-2 bg-white rounded shadow-sm relative flex items-start space-x-2 hover:bg-gray-100 transition-colors duration-200">
+                        <div class="p-2 bg-white rounded-2xl shadow-sm relative flex items-start space-x-2 hover:bg-gray-100 transition-colors duration-200 group">
                             <img src="<?php echo htmlspecialchars($message['profile_image']); ?>" alt="Profile Image" class="w-8 h-8 rounded-full">
-                            <div class="flex-grow">
+                            <div class="flex-grow relative">
                                 <p class="font-bold text-sm"><?php echo htmlspecialchars($message['username']); ?></p>
-                                <p class="text-gray-500 text-xs"><?php echo htmlspecialchars($message['timestamp']); ?></p>
                                 <p class="text-sm"><?php echo htmlspecialchars($message['message']); ?></p>
+                                <span class="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs text-gray-500">
+                                    <?php 
+                                        $timestamp = strtotime($message['timestamp']);
+                                        echo date('M j, Y g:i A', $timestamp);
+                                    ?>
+                                </span>
                             </div>
                             <div class="relative">
                                 <button class="text-gray-500 hover:text-gray-700 focus:outline-none" onclick="toggleDropdown(this)">
                                     <i class="fas fa-ellipsis-v"></i>
                                 </button>
-                                <div class="dropdown-menu absolute right-0 mt-2 w-32 bg-white border border-gray-300 rounded shadow-lg hidden">
-                                    <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Report</a>
+                                <div class="dropdown-menu absolute right-0 mt-2 w-32 bg-white border border-gray-300 rounded-2xl shadow-lg hidden">
+                                    <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 first:rounded-t-2xl">Report</a>
                                     <?php if ($message['user_id'] == $user_id): ?>
                                         <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100" onclick="showEditModal(<?php echo $message['id']; ?>, '<?php echo htmlspecialchars($message['message']); ?>')">Edit</a>
                                         <form method="post" action="" class="inline">
                                             <input type="hidden" name="delete_message_id" value="<?php echo $message['id']; ?>">
-                                            <button type="submit" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Delete</button>
+                                            <button type="submit" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 last:rounded-b-2xl">Delete</button>
                                         </form>
                                     <?php endif; ?>
                                 </div>
@@ -231,9 +276,11 @@ $notebook_stmt->close();
                     </div>
                 </div>
 
-                <form id="message-form" class="mt-4 flex-shrink-0 flex">
-                    <input type="text" id="message-input" class="flex-grow p-2 border rounded" placeholder="Type your message here..." required>
-                    <button type="submit" class="ml-2 p-2 bg-blue-500 text-white rounded">Send</button>
+                <form id="message-form" class="mt-4 flex-shrink-0 flex space-x-3">
+                    <input type="text" id="message-input" class="flex-grow p-2 border rounded-lg focus:outline-none focus:border-blue-500" placeholder="Type your message...">
+                    <button onclick="sendMessage()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
                 </form>
             </div>
 
@@ -922,6 +969,28 @@ function removeUserFromBubble(userId) {
     })
     .catch(error => console.error('Error:', error));
 }
+
+function toggleMemberList() {
+            const memberList = document.getElementById('member-list');
+            const arrow = document.getElementById('memberArrow');
+            
+            memberList.classList.toggle('hidden');
+            
+            // Rotate arrow when list is shown/hidden
+            if (memberList.classList.contains('hidden')) {
+                arrow.classList.remove('rotate-90');
+            } else {
+                arrow.classList.add('rotate-90');
+            }
+        }
+
+// Toggle options menu visibility
+        function toggleOptionsMenu() {
+            const optionsMenu = document.getElementById('options-menu');
+            optionsMenu.classList.toggle('hidden');
+        }
+
+
 </script>
 
 <!-- Share Modal -->
