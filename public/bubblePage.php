@@ -970,6 +970,26 @@ function removeUserFromBubble(userId) {
     .catch(error => console.error('Error:', error));
 }
 
+function toggleMemberList() {
+            const memberList = document.getElementById('member-list');
+            const arrow = document.getElementById('memberArrow');
+            
+            memberList.classList.toggle('hidden');
+            
+            // Rotate arrow when list is shown/hidden
+            if (memberList.classList.contains('hidden')) {
+                arrow.classList.remove('rotate-90');
+            } else {
+                arrow.classList.add('rotate-90');
+            }
+        }
+
+// Toggle options menu visibility
+        function toggleOptionsMenu() {
+            const optionsMenu = document.getElementById('options-menu');
+            optionsMenu.classList.toggle('hidden');
+        }
+
 
 </script>
 

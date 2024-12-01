@@ -163,12 +163,16 @@ $stmt->close();
 </head>
 <body class="bg-blue-50">
     <!-- Navbar -->
-    <nav class="navbar bg-secondary-100 text-white  flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;}">
+    <nav class="navbar bg-secondary-100 text-white  flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;">
         <div class="flex items-center">
             <a href="indexTimeline.php"><img src="../public/ps.png" alt="Peerync Logo" class="h-18 w-16"></a>
             <span class="text-2xl font-bold">PeerSync</span>
         </div>
-        <div class="flex items-center">
+        <div class="flex items-center space-x-4">
+            <!-- Notifications Button -->
+            <button id="notificationsButton" class="text-white hover:text-gray-200">
+                <i class="fas fa-bell text-xl"></i>
+            </button>
             <a href="exploreBubble.php" class="ml-4 hover:bg-blue-400 p-2 rounded">
                 <i class="fas fa-globe fa-lg"></i>
             </a>
@@ -448,6 +452,19 @@ $stmt->close();
         </div>
     </div>
 
+    <!-- Notifications Modal -->
+    <div id="notificationsModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Notifications</h2>
+                <span id="closeNotificationsModal" class="close cursor-pointer">&times;</span>
+            </div>
+            <div id="notificationsList" class="space-y-4">
+                <!-- Notifications will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+
     <!-- Report Modal -->
     <div id="reportModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
         <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 md:mx-auto">
@@ -714,5 +731,78 @@ $stmt->close();
         });
     });
     </script>
+
+    <script>
+        // Notifications Modal functionality
+        const notificationsModal = document.getElementById('notificationsModal');
+        const notificationsBtn = document.getElementById('notificationsButton');
+        const closeNotificationsModal = document.getElementById('closeNotificationsModal');
+
+        notificationsBtn.onclick = function() {
+            notificationsModal.style.display = "block";
+        }
+
+        closeNotificationsModal.onclick = function() {
+            notificationsModal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target == notificationsModal) {
+                notificationsModal.style.display = "none";
+            }
+        }
+    </script>
+
+    <!-- Dismissed Report Notification Modal -->
+<div id="dismissedReportModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header flex justify-between items-center mb-4">
+            <h5 class="modal-title text-xl font-bold text-gray-800">Report Status</h5>
+            <span class="close-button cursor-pointer text-2xl" id="closeDismissedReportModal">&times;</span>
+        </div>
+        <div class="modal-body p-4">
+            <p class="text-gray-700">The report you have submitted does not contain any issues, thank you for making our community clean.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Check for dismissed reports on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the dismissed report status from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const reportStatus = urlParams.get('report_status');
+        
+        if (reportStatus === 'dismissed') {
+            const dismissedReportModal = document.getElementById('dismissedReportModal');
+            dismissedReportModal.style.display = 'block';
+            
+            // Close modal after 3 seconds
+            setTimeout(() => {
+                dismissedReportModal.style.display = 'none';
+                // Remove the parameter from URL
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }, 3000);
+        }
+
+        // Close modal when clicking the close button
+        document.getElementById('closeDismissedReportModal').onclick = function() {
+            document.getElementById('dismissedReportModal').style.display = 'none';
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('dismissedReportModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+        }
+    });
+</script>
 </body>
 </html>

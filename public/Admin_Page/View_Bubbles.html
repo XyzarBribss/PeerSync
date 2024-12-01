@@ -1,113 +1,460 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8">
-	<title>View Bubbles | Simple Admin</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<link rel="stylesheet" type="text/css" href="vendors/bootstrap/css/bootstrap-4.3.1/bootstrap.min.css">
-	<link rel="stylesheet" type="text/css" href="assets/css/simple-custom.css">
-	<link rel="stylesheet" type="text/css" href="vendors/icon/mdi/css/materialdesignicons.min.css">
+    <meta charset="utf-8">
+    <title>View Bubbles | PeerSync Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@6.5.95/css/materialdesignicons.min.css">
+    <link rel="stylesheet" type="text/css" href="assets/css/simple-custom.css">
+    <style>
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-start;
+            align-items: center;
+            white-space: nowrap;
+        }
+        /* Table cell truncation styles */
+        .truncate {
+            max-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .bubble-name {
+            max-width: 150px;
+        }
+        .bubble-description {
+            max-width: 250px;
+        }
+        .bubble-creator {
+            max-width: 120px;
+        }
+        .bubble-date {
+            max-width: 120px;
+        }
+        /* Add tooltip on hover */
+        .truncate:hover {
+            position: relative;
+        }
+        .truncate:hover::after {
+            content: attr(data-full-text);
+            position: absolute;
+            left: 0;
+            top: 100%;
+            background-color: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            z-index: 1000;
+            white-space: normal;
+            max-width: 300px;
+            word-wrap: break-word;
+        }
+    </style>
 </head>
 <body>
-	<div class="container-fluid">
-		<div class="row">
-			<div class="col-md-2">
-				<div class="sidebar">
-					<div class="brand">
-						<a href="#" class="brand-name">Simple Admin</a>
-					</div>
-					<div class="sidebar-sticky">
-						<ul class="nav flex-column">
-							<li class="nav-item">
-								<a href="dashboard.html" class="nav-link"><i class="mdi mdi-monitor"></i> Dashboard</a>
-							</li>
-							<li class="nav-item">
-								<a class="nav-link" data-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample"><i class="mdi mdi-shape-outline"></i> Management <span class="badge badge-info">New</span><i class="mdi mdi-chevron-down float-right pr-2"></i></a>
-								<div class="collapse" id="collapseExample">
-									<a class="nav-link" href="index_timeline_reports.html"><i class="mdi mdi-circle-medium"></i> Timeline Reports</a>
-									<a class="nav-link" href="view_users.html"><i class="mdi mdi-circle-medium"></i> View Users</a>
-									<a class="nav-link active" href="View_Bubbles.html"><i class="mdi mdi-circle-medium"></i> Bubbles</a>
-									<a class="nav-link" href="admin_messages.html"><i class="mdi mdi-circle-medium"></i> Messages</a>
-								</div>
-							</li>
-						</ul>
-					</div>
-					<div class="nav-bottom">
-						<ul class="nav">
-							<li class="nav-item"><a href="../indexLogin.php" class="nav-link"><i class="mdi mdi-power"></i></a></li>
-						</ul>
-					</div>
-				</div>
-			</div>
-			<main class="col-md-9 col-lg-10" role="main">
-				<div class="container">
-					<div class="content-header mt-2 mb-3">
-						<h2 class="text-header">View Bubbles</h2>
-					</div>
-					<div class="row">
-						<div class="col-md-12 mb-3">
-							<div class="card">
-								<div class="card-body pb-0">
-									<button class="btn btn-primary mb-3" onclick="fetchBubbles()">Load Bubbles</button>
-									<div class="table-responsive">
-										<table class="table">
-											<thead>
-												<tr>
-													<th>ID</th>
-													<th>Bubble Name</th>
-													<th>Description</th>
-													<th>Creator ID</th>
-													<th>Created At</th>
-												</tr>
-											</thead>
-											<tbody id="bubbleTableBody">
-												<!-- Bubble data will be dynamically loaded here -->
-											</tbody>
-										</table>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</main>
-		</div>
-	</div>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2">
+                <!-- Sidebar -->
+                <div class="col-md-2 sidebar">
+                    <div class="brand">
+                        <a href="#" class="brand-name">PeerSync Admin</a>
+                    </div>
+                    <div class="sidebar-sticky">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a href="dashboard.html" class="nav-link">
+                                    <i class="mdi mdi-monitor"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link collapsed" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
+                                    <i class="mdi mdi-shape-outline"></i> Management 
+                                    <span class="badge bg-info">New</span>
+                                    <i class="mdi mdi-chevron-down float-end pe-2"></i>
+                                </a>
+                                <div class="collapse" id="collapseExample">
+                                    <a class="nav-link" href="index_timeline_reports.html"><i class="mdi mdi-circle-medium"></i> Timeline Reports</a>
+                                    <a class="nav-link" href="view_users.html"><i class="mdi mdi-circle-medium"></i> View Users</a>
+                                    <a class="nav-link active" href="View_Bubbles.html"><i class="mdi mdi-circle-medium"></i> Bubbles</a>
+                                    <a class="nav-link" href="admin_messages.html"><i class="mdi mdi-circle-medium"></i> Messages</a>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="nav-bottom">
+                        <ul class="nav">
+                            <li class="nav-item">
+                                <a href="../indexLogin.php" class="nav-link"><i class="mdi mdi-power"></i></a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
 
-	<!-- Jquery -->
-	<script src="vendors/bootstrap/js/jquery-3.3.1/jquery-3.3.1.min.js"></script>
-	<!-- Bootstrap JS -->
-	<script src="vendors/bootstrap/js/bootstrap-4.3.1/bootstrap.min.js"></script>
-	<!-- Popper -->
-	<script src="vendors/bootstrap/js/popper/pooper.min.js"></script>
+            <!-- Main Content -->
+            <main class="col-md-9 col-lg-10" role="main">
+                <div class="container">
+                    <div class="content-header mt-2 mb-3">
+                        <h2 class="text-header">View Bubbles</h2>
+                        <div class="btn-toolbar mb-2 mb-md-0">
+                            <div class="btn-group me-2">
+                                <button type="button" class="btn auto-refresh-toggle" id="autoRefreshToggle" onclick="toggleAutoRefresh()">
+                                    <i class="mdi mdi-refresh"></i> Auto Refresh: OFF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-	<!-- Custom Script to Fetch Bubbles -->
-	<script>
-	function fetchBubbles() {
-	    fetch('View_bubbles.php') // Update this to the correct PHP file for fetching bubbles
-	        .then(response => {
-	            if (!response.ok) {
-	                throw new Error('Network response was not ok');
-	            }
-	            return response.json();
-	        })
-	        .then(data => {
-	            let tableBody = document.getElementById('bubbleTableBody');
-	            tableBody.innerHTML = ''; // Clear existing rows
-	            data.forEach(bubble => {
-	                let row = `<tr>
-	                    <td>${bubble.id}</td>
-	                    <td>${bubble.bubble_name}</td>
-	                    <td>${bubble.description || 'N/A'}</td>
-	                    <td>${bubble.creator_id}</td>
-	                    <td>${new Date(bubble.created_at).toLocaleString()}</td>
-	                </tr>`;
-	                tableBody.innerHTML += row;
-	            });
-	        })
-	        .catch(error => console.error('Error fetching bubbles:', error));
-	}
-	</script>
+                    <!-- Search Box -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="mdi mdi-magnify"></i></span>
+                                </div>
+                                <input type="text" id="searchInput" class="form-control" placeholder="Search bubbles...">
+                            </div>
+                        </div>
+                    </div>
 
+                    <!-- Loading Spinner -->
+                    <div id="loadingSpinner" class="loading-spinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div id="errorMessage" class="error-message"></div>
+
+                    <!-- Table Container -->
+                    <div class="table-container">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th class="sortable" onclick="sortTable('bubble_name')">Bubble Name</th>
+                                        <th class="sortable" onclick="sortTable('description')">Description</th>
+                                        <th class="sortable" onclick="sortTable('creator_id')">Creator</th>
+                                        <th class="sortable" onclick="sortTable('created_at')">Created At</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bubbleTableBody">
+                                    <!-- Bubble data will be dynamically loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Pagination -->
+                        <nav aria-label="Page navigation" class="mt-3">
+                            <ul class="pagination justify-content-center" id="pagination"></ul>
+                        </nav>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentSort = { column: 'bubble_name', direction: 'asc' };
+        let bubbleData = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let usernames = new Map(); // Cache for usernames
+        let autoRefreshInterval;
+        const REFRESH_INTERVAL = 30000; // 30 seconds
+
+        // Function to start auto-refresh
+        function startAutoRefresh() {
+            // Clear any existing interval
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            // Set new interval
+            autoRefreshInterval = setInterval(fetchBubbles, REFRESH_INTERVAL);
+        }
+
+        // Function to stop auto-refresh
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        // Function to toggle auto-refresh
+        function toggleAutoRefresh() {
+            const toggleButton = document.getElementById('autoRefreshToggle');
+            if (autoRefreshInterval) {
+                stopAutoRefresh();
+                toggleButton.innerHTML = '<i class="mdi mdi-refresh"></i> Auto Refresh: OFF';
+                toggleButton.classList.remove('active');
+            } else {
+                startAutoRefresh();
+                toggleButton.innerHTML = '<i class="mdi mdi-refresh"></i> Auto Refresh: ON';
+                toggleButton.classList.add('active');
+                // Fetch immediately when turning on
+                fetchBubbles();
+            }
+        }
+
+        // Function to fetch username
+        async function fetchUsername(userId) {
+            if (usernames.has(userId)) {
+                return usernames.get(userId);
+            }
+            
+            try {
+                const response = await fetch(`get_username.php?user_id=${userId}`);
+                if (!response.ok) throw new Error('Failed to fetch username');
+                const data = await response.json();
+                usernames.set(userId, data.username);
+                return data.username;
+            } catch (error) {
+                console.error('Error fetching username:', error);
+                return 'Unknown User';
+            }
+        }
+
+        // Function to toggle loading indicator
+        function toggleLoading(show) {
+            document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
+        }
+
+        // Function to toggle error message
+        function toggleError(show, message = '') {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.style.display = show ? 'block' : 'none';
+            if (message) errorElement.textContent = message;
+        }
+
+        // Function to fetch bubbles data
+        async function fetchBubbles() {
+            toggleLoading(true);
+            toggleError(false);
+
+            try {
+                const response = await fetch('View_Bubbles.php');
+                if (!response.ok) throw new Error('Failed to fetch bubbles');
+                const data = await response.json();
+                bubbleData = data;
+                await renderBubbles();
+                toggleLoading(false);
+            } catch (error) {
+                console.error('Error:', error);
+                toggleLoading(false);
+                toggleError(true, error.message);
+                // Stop auto-refresh on error to prevent spam
+                stopAutoRefresh();
+                const toggleButton = document.getElementById('autoRefreshToggle');
+                toggleButton.innerHTML = '<i class="mdi mdi-refresh"></i> Auto Refresh: OFF';
+                toggleButton.classList.remove('active');
+            }
+        }
+
+        // Function to render bubbles
+        async function renderBubbles() {
+            const tableBody = document.getElementById('bubbleTableBody');
+            tableBody.innerHTML = '';
+
+            // Get the current page's data
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageData = bubbleData.slice(start, end);
+
+            for (const bubble of pageData) {
+                const creatorUsername = await fetchUsername(bubble.creator_id);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="truncate bubble-name" data-full-text="${bubble.bubble_name}">${bubble.bubble_name}</td>
+                    <td class="truncate bubble-description" data-full-text="${bubble.description}">${bubble.description}</td>
+                    <td class="truncate bubble-creator" data-full-text="${creatorUsername}">${creatorUsername}</td>
+                    <td class="truncate bubble-date" data-full-text="${formatDate(bubble.created_at)}">${formatDate(bubble.created_at)}</td>
+                    <td class="action-buttons">
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewBubble(${bubble.id})">
+                            <i class="mdi mdi-eye"></i> View
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteBubble(${bubble.id})">
+                            <i class="mdi mdi-delete"></i> Delete
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            }
+
+            // Update pagination
+            const totalPages = Math.ceil(bubbleData.length / itemsPerPage);
+            updatePagination(totalPages);
+        }
+
+        // Function to format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        // Function to update pagination
+        function updatePagination(totalPages) {
+            const paginationElement = document.getElementById('pagination');
+            let paginationHTML = '';
+
+            if (totalPages > 1) {
+                // Previous button
+                paginationHTML += `
+                    <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;">
+                            <i class="mdi mdi-chevron-left"></i>
+                        </a>
+                    </li>
+                `;
+
+                // Calculate page range to show
+                let startPage = Math.max(1, currentPage - 2);
+                let endPage = Math.min(totalPages, startPage + 4);
+                
+                // Adjust start if we're near the end
+                if (endPage - startPage < 4) {
+                    startPage = Math.max(1, endPage - 4);
+                }
+
+                // First page and ellipsis
+                if (startPage > 1) {
+                    paginationHTML += `
+                        <li class="page-item">
+                            <a class="page-link" href="#" onclick="changePage(1); return false;">1</a>
+                        </li>
+                    `;
+                    if (startPage > 2) {
+                        paginationHTML += `
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        `;
+                    }
+                }
+
+                // Page numbers
+                for (let i = startPage; i <= endPage; i++) {
+                    paginationHTML += `
+                        <li class="page-item ${currentPage === i ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
+                        </li>
+                    `;
+                }
+
+                // Last page and ellipsis
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        paginationHTML += `
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        `;
+                    }
+                    paginationHTML += `
+                        <li class="page-item">
+                            <a class="page-link" href="#" onclick="changePage(${totalPages}); return false;">${totalPages}</a>
+                        </li>
+                    `;
+                }
+
+                // Next button
+                paginationHTML += `
+                    <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">
+                            <i class="mdi mdi-chevron-right"></i>
+                        </a>
+                    </li>
+                `;
+            }
+
+            paginationElement.innerHTML = paginationHTML;
+        }
+
+        // Function to change page
+        function changePage(page) {
+            const totalPages = Math.ceil(bubbleData.length / itemsPerPage);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderBubbles();
+        }
+
+        // Function to sort table
+        function sortTable(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+
+            // Update sort indicators
+            document.querySelectorAll('th.sortable').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (th.textContent.toLowerCase().includes(column)) {
+                    th.classList.add(`sort-${currentSort.direction}`);
+                }
+            });
+
+            bubbleData.sort((a, b) => {
+                let valueA = a[column];
+                let valueB = b[column];
+
+                if (typeof valueA === 'string') valueA = valueA.toLowerCase();
+                if (typeof valueB === 'string') valueB = valueB.toLowerCase();
+
+                if (valueA < valueB) return currentSort.direction === 'asc' ? -1 : 1;
+                if (valueA > valueB) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            renderBubbles();
+        }
+
+        // Function to filter bubbles
+        function filterBubbles() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filteredData = bubbleData.filter(bubble => 
+                bubble.bubble_name.toLowerCase().includes(searchTerm) ||
+                (bubble.description && bubble.description.toLowerCase().includes(searchTerm))
+            );
+            renderBubbles(filteredData);
+        }
+
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('input', filterBubbles);
+
+        // Initial load and start auto-refresh
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchBubbles();
+            startAutoRefresh();
+            // Update button state
+            const toggleButton = document.getElementById('autoRefreshToggle');
+            toggleButton.innerHTML = '<i class="mdi mdi-refresh"></i> Auto Refresh: ON';
+            toggleButton.classList.add('active');
+        });
+
+        // Stop auto-refresh when page is hidden
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopAutoRefresh();
+            } else {
+                startAutoRefresh();
+                fetchBubbles(); // Refresh immediately when page becomes visible
+            }
+        });
+    </script>
 </body>
 </html>

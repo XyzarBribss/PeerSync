@@ -1,7 +1,5 @@
 <?php
-// suspend_user.php
-
-// Include the database connection
+// suspend_user.phpre// Include the database connection
 include 'config.php';
 
 // Get the posted data
@@ -32,6 +30,7 @@ if ($stmt) {
     $stmt->close();
 } else {
     echo json_encode(["success" => false, "message" => "Error preparing statement: " . $conn->error]);
+statement: " . $conn->error]);
 }
 
 $conn->close();
