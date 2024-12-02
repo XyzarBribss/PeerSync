@@ -155,7 +155,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link collapsed" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
+                                <a class="nav-link" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
                                     <i class="mdi mdi-shape-outline"></i> Management 
                                     <span class="badge bg-info">New</span>
                                     <i class="mdi mdi-chevron-down float-end pe-2"></i>
@@ -434,6 +434,38 @@
 
         // Initial load
         fetchReports();
+    </script>
+    <script>
+        // Store the collapse state in localStorage
+        document.addEventListener('DOMContentLoaded', function() {
+            const collapseState = localStorage.getItem('sidebarState');
+            const collapseElement = document.getElementById('collapseExample');
+            const collapseButton = document.querySelector('[data-bs-toggle="collapse"]');
+
+            if (collapseState === 'open') {
+                collapseElement.classList.add('show');
+                collapseButton.classList.remove('collapsed');
+                collapseButton.setAttribute('aria-expanded', 'true');
+            }
+
+            // Add event listener to store collapse state
+            collapseButton.addEventListener('click', function() {
+                if (collapseElement.classList.contains('show')) {
+                    localStorage.setItem('sidebarState', 'closed');
+                } else {
+                    localStorage.setItem('sidebarState', 'open');
+                }
+            });
+
+            // Highlight active page
+            const currentPage = window.location.pathname.split('/').pop();
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                if (link.getAttribute('href') === currentPage) {
+                    link.classList.add('active');
+                }
+            });
+        });
     </script>
 </body>
 </html>

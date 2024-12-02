@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Floating Bubbles Animation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(45deg, #1e5799, #2989d8);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, 
+                rgba(255, 255, 255, 0.9),
+                rgba(255, 255, 255, 0.4) 70%,
+                rgba(255, 255, 255, 0.2)
+            );
+            box-shadow: 
+                inset 0 0 20px rgba(255, 255, 255, 0.5),
+                0 0 15px rgba(255, 255, 255, 0.3);
+            pointer-events: none;
+            will-change: transform;
+            animation: float-bubble var(--duration) ease-in-out infinite;
+        }
+
+        .bubble::after {
+            content: '';
+            position: absolute;
+            top: 15%;
+            left: 15%;
+            width: 20%;
+            height: 20%;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+        }
+
+        @keyframes float-bubble {
+            0%, 100% {
+                transform: translate(0, 0) scale(1);
+            }
+            25% {
+                transform: translate(calc(var(--moveX) * 50px), calc(var(--moveY) * -30px)) scale(1.05);
+            }
+            50% {
+                transform: translate(calc(var(--moveX) * 100px), calc(var(--moveY) * -60px)) scale(1);
+            }
+            75% {
+                transform: translate(calc(var(--moveX) * 50px), calc(var(--moveY) * -30px)) scale(0.95);
+            }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        function createBubble() {
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            
+            // Random size between 20px and 80px
+            const size = Math.random() * 60 + 20;
+            bubble.style.width = `${size}px`;
+            bubble.style.height = `${size}px`;
+            
+            // Random position
+            const posX = Math.random() * window.innerWidth;
+            const posY = Math.random() * window.innerHeight;
+            bubble.style.left = `${posX}px`;
+            bubble.style.top = `${posY}px`;
+            
+            // Random movement direction
+            const moveX = Math.random() * 2 - 1; // -1 to 1
+            const moveY = Math.random() * 2 - 1; // -1 to 1
+            bubble.style.setProperty('--moveX', moveX);
+            bubble.style.setProperty('--moveY', moveY);
+            
+            // Random animation duration
+            const duration = Math.random() * 4 + 6 + 's'; // 6-10 seconds
+            bubble.style.setProperty('--duration', duration);
+            
+            document.body.appendChild(bubble);
+        }
+
+        // Create initial bubbles
+        for(let i = 0; i < 40; i++) {
+            createBubble();
+        }
+
+        // Create new bubbles periodically
+        setInterval(createBubble, 3000);
+
+        // Remove excess bubbles periodically
+        setInterval(() => {
+            const bubbles = document.querySelectorAll('.bubble');
+            if (bubbles.length > 50) {
+                bubbles[0].remove();
+            }
+        }, 3000);
+
+        // Adjust bubbles on window resize
+        window.addEventListener('resize', () => {
+            // Clear existing bubbles
+            document.querySelectorAll('.bubble').forEach(bubble => bubble.remove());
+            // Create new batch of bubbles
+            for(let i = 0; i < 40; i++) {
+                createBubble();
+            }
+        });
+    </script>
+</body>
+</html>

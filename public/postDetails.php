@@ -217,12 +217,17 @@ function joinBubble() {
 </head>
 <body class="bg-blue-50">
     <!-- Navbar -->
-    <nav class="navbar bg-secondary-100 text-white  flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;}">
+    <nav class="navbar bg-secondary-100 text-white flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;">
         <div class="flex items-center">
-            <a href="indexTimeline.php"><img src="../public/ps.png" alt="Peerync Logo" class="h-16 w-16"></a>
+            <a href="indexTimeline.php"><img src="../public/ps.png" alt="Peerync Logo" class="h-18 w-16"></a>
             <span class="text-2xl font-bold">PeerSync</span>
         </div>
-        <div class="flex items-center">
+        <div class="flex items-center space-x-4">
+            <!-- Notifications Button -->
+            <button id="notificationsButton" class="text-white hover:text-gray-200 relative">
+                <i class="fas fa-bell text-xl"></i>
+                <span class="notification-badge hidden absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">0</span>
+            </button>
             <a href="exploreBubble.php" class="ml-4 hover:bg-blue-400 p-2 rounded">
                 <i class="fas fa-globe fa-lg"></i>
             </a>
@@ -241,6 +246,23 @@ function joinBubble() {
             </div>
         </div>
     </nav>
+
+    <!-- Notifications Modal -->
+    <div id="notificationsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="bg-white w-96 max-w-lg mx-auto mt-20 rounded-lg shadow-lg">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Notifications</h3>
+                <button id="closeNotificationsModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="notificationsList" class="max-h-96 overflow-y-auto">
+                <div id="notificationsLoader" class="text-center py-4 hidden">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Leftmost Sidebar -->
     <div id="sidebar" class="fixed top-0 left-0 h-full mt-10 text-white z-50 flex flex-col items-center sidebar transition-all duration-300 shadow-lg border-r border-gray-300" style="width: 64px; background-color: rgb(70 130 180 / 50%);">
@@ -745,10 +767,10 @@ function toggleReplies(commentId) {
                         <div class="flex items-center mb-4">
                             <?php if (!empty($profile_image_base64)): ?>
                                 <img src="<?= $profile_image_base64 ?>" alt="<?= htmlspecialchars($post['bubble_name']) ?>" 
-                                     class="w-12 h-12 rounded-full mr-3 border-2 border-[rgb(70,130,180)]">
+                                     class="w-12 h-12 rounded-full mx-auto">
                             <?php else: ?>
                                 <img src="default-profile.png" alt="Default Profile Image" 
-                                     class="w-12 h-12 rounded-full mr-3 border-2 border-[rgb(70,130,180)]">
+                                     class="w-12 h-12 rounded-full mx-auto border-2 border-[rgb(70,130,180)]">
                             <?php endif; ?>
                             <div>
                                 <h3 class="font-bold text-gray-800"><?= htmlspecialchars($post['bubble_name']) ?></h3>
@@ -915,6 +937,60 @@ window.onclick = function(event) {
     </script>
 
     <script>
+    // Notifications functionality
+    let notificationsOffset = 0;
+    let isLoadingNotifications = false;
+
+    async function loadNotifications() {
+        if (isLoadingNotifications) return;
+        
+        isLoadingNotifications = true;
+        $('#notificationsLoader').removeClass('hidden');
+
+        try {
+            const response = await fetch(`api/get_notifications.php?offset=${notificationsOffset}`);
+            const html = await response.text();
+            
+            if (notificationsOffset === 0) {
+                $('#notificationsList').empty();
+            }
+            
+            $('#notificationsList').append(html);
+            notificationsOffset += 10;
+            
+        } catch (error) {
+            $('#notificationsList').html("<div class='text-red-500 text-center p-4'>Failed to load notifications</div>");
+        }
+        
+        isLoadingNotifications = false;
+        $('#notificationsLoader').addClass('hidden');
+    }
+
+    // Event Listeners
+    $('#notificationsButton').on('click', function() {
+        notificationsOffset = 0;
+        loadNotifications();
+        $('#notificationsModal').removeClass('hidden');
+    });
+
+    $('#closeNotificationsModal').on('click', function() {
+        $('#notificationsModal').addClass('hidden');
+    });
+
+    // Load more notifications when scrolling to bottom
+    $('#notificationsList').on('scroll', function() {
+        if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight - 20) {
+            loadNotifications();
+        }
+    });
+
+    // Close modal when clicking outside
+    $(window).on('click', function(e) {
+        if ($(e.target).is('#notificationsModal')) {
+            $('#notificationsModal').addClass('hidden');
+        }
+    });
+=======
     // Function to toggle post menu dropdown
     function togglePostMenu() {
         const menu = document.getElementById('postMenu');

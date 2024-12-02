@@ -456,5 +456,33 @@
             }
         });
     </script>
+    <script>
+        // Store the collapse state in localStorage
+        const collapseState = localStorage.getItem('sidebarState');
+        if (collapseState === 'open') {
+            document.getElementById('collapseExample').classList.add('show');
+        }
+
+        // Add event listener to store collapse state
+        document.querySelector('[data-bs-toggle="collapse"]').addEventListener('click', function() {
+            const collapseElement = document.getElementById('collapseExample');
+            if (collapseElement.classList.contains('show')) {
+                localStorage.setItem('sidebarState', 'closed');
+            } else {
+                localStorage.setItem('sidebarState', 'open');
+            }
+        });
+
+        // Highlight active page
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPage = window.location.pathname.split('/').pop();
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                if (link.getAttribute('href') === currentPage) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

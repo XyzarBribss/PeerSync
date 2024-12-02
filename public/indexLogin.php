@@ -107,7 +107,7 @@ if (isset($_GET['code'])) {
             height: 100%;
             overflow: hidden;
             transition: transform 0.6s ease-in-out;
-            z-index: 100;
+            z-index: 10;
         }
         .overlay {
             background: #629eda;
@@ -174,7 +174,7 @@ if (isset($_GET['code'])) {
         </div>
         <nav class="flex-1 flex justify-end space-x-8">
             <a href="dashboard" class="text-white hover:text-gray-200">Dashboard</a>
-            <a href="Support" class="text-white hover:text-gray-200">Support</a>
+            <a href="#" onclick="openSupportModal()" class="text-white hover:text-gray-200">Support</a>
             <a href="About_Us.html" class="text-white hover:text-gray-200">About Us</a>
             <a href="Login.html" class="text-white hover:text-gray-200">Sign-in</a>
             <a href="AdminLogin.html" class="text-white hover:text-gray-200">Admin Log</a>
@@ -216,7 +216,7 @@ if (isset($_GET['code'])) {
                             <label for="checkbox" class="text-gray-700">Remember me</label>
                         </div>
                         <div class="pass-link">
-                            <a href="#" class="text-blue-500 hover:underline" id="forgot-password-link">Forgot password?</a>
+                            <button type="button" onclick="openResetPasswordForm()" class="text-blue-500 hover:underline">Reset password</button>
                         </div>
                     </div>
                     <button class="w-full bg-blue-500 text-white p-2 rounded">Login</button>
@@ -261,6 +261,297 @@ if (isset($_GET['code'])) {
         <p class="text-gray-700">&copy; 2024 PeerSync. All rights reserved.</p>
     </div>
 </footer>
+
+<!-- Reset Password Modal -->
+<div id="resetPasswordModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center" style="z-index: 9999;">
+    <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4 relative">
+        <button onclick="closeResetPasswordModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+        
+        <div class="text-center mb-6">
+            <svg class="w-16 h-16 mx-auto mb-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z">
+                </path>
+            </svg>
+            <h2 class="text-2xl font-bold text-gray-900">Reset Password</h2>
+            <p class="mt-2 text-sm text-gray-600">
+                Enter your email address and we'll send you a link to reset your password.
+            </p>
+        </div>
+
+        <form id="resetPasswordForm" class="space-y-4">
+            <div>
+                <label for="resetEmail" class="block text-sm font-medium text-gray-700">Email Address</label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207">
+                            </path>
+                        </svg>
+                    </div>
+                    <input type="email" id="resetEmail" name="email" required 
+                           class="pl-10 block w-full border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 p-2.5"
+                           placeholder="Enter your email">
+                </div>
+            </div>
+
+            <div id="resetMessage" class="hidden rounded-md p-4">
+                <p class="text-sm"></p>
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-6">
+                <button type="button" onclick="closeResetPasswordModal()" 
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center">
+                    <span>Send Reset Link</span>
+                    <svg class="ml-2 -mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Support Modal -->
+<div id="supportModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center" style="z-index: 9999;">
+    <div class="bg-white p-8 rounded-lg shadow-lg max-w-2xl w-full mx-4 relative">
+        <!-- Close Button -->
+        <button onclick="closeSupportModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        <!-- Modal Header -->
+        <div class="text-center mb-6">
+            <svg class="w-16 h-16 mx-auto mb-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z">
+                </path>
+            </svg>
+            <h2 class="text-2xl font-bold text-gray-900">Contact Support</h2>
+            <p class="mt-2 text-sm text-gray-600">
+                Need help? Send us a message and we'll get back to you as soon as possible.
+            </p>
+        </div>
+
+        <!-- Support Form -->
+        <form id="supportForm" class="space-y-4">
+            <div class="grid grid-cols-1 gap-4">
+                <!-- Email Field -->
+                <div>
+                    <label for="supportEmail" class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <div class="mt-1">
+                        <input type="email" id="supportEmail" name="email" required 
+                               class="block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2.5"
+                               value="<?php echo htmlspecialchars($_SESSION['email'] ?? ''); ?>"
+                               placeholder="Enter your email">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject Field -->
+            <div>
+                <label for="supportSubject" class="block text-sm font-medium text-gray-700">Subject</label>
+                <div class="mt-1">
+                    <input type="text" id="supportSubject" name="subject" required
+                           class="block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2.5"
+                           placeholder="Brief description of your issue">
+                </div>
+            </div>
+
+            <!-- Message Field -->
+            <div>
+                <label for="supportMessage" class="block text-sm font-medium text-gray-700">Message</label>
+                <div class="mt-1">
+                    <textarea id="supportMessage" name="message" rows="4" required
+                              class="block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2.5"
+                              placeholder="Describe your issue in detail"></textarea>
+                </div>
+            </div>
+
+            <!-- Message Display -->
+            <div id="supportMessageDisplay" class="hidden rounded-md p-4">
+                <p class="text-sm"></p>
+            </div>
+
+            <!-- Form Buttons -->
+            <div class="flex justify-end space-x-3 mt-6">
+                <button type="button" onclick="closeSupportModal()" 
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center">
+                    <span>Submit</span>
+                    <svg class="ml-2 -mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openResetPasswordForm() {
+        document.getElementById('resetPasswordModal').classList.remove('hidden');
+        document.getElementById('resetEmail').focus();
+    }
+
+    function closeResetPasswordModal() {
+        document.getElementById('resetPasswordModal').classList.add('hidden');
+        document.getElementById('resetMessage').classList.add('hidden');
+        document.getElementById('resetPasswordForm').reset();
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('resetPasswordModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeResetPasswordModal();
+        }
+    });
+
+    document.getElementById('resetPasswordForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const email = document.getElementById('resetEmail').value;
+        const messageDiv = document.getElementById('resetMessage');
+        const messagePara = messageDiv.querySelector('p');
+        const submitButton = this.querySelector('button[type="submit"]');
+        
+        // Disable submit button and show loading state
+        submitButton.disabled = true;
+        submitButton.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Sending...
+        `;
+
+        // Send password reset request
+        fetch('reset_password.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `email=${encodeURIComponent(email)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            messageDiv.classList.remove('hidden');
+            if (data.success) {
+                messageDiv.className = 'rounded-md bg-green-50 p-4';
+                messagePara.className = 'text-sm text-green-700';
+                messagePara.textContent = 'Password reset instructions have been sent to your email.';
+                setTimeout(closeResetPasswordModal, 3000);
+            } else {
+                messageDiv.className = 'rounded-md bg-red-50 p-4';
+                messagePara.className = 'text-sm text-red-700';
+                messagePara.textContent = data.error || 'Failed to send reset instructions.';
+            }
+        })
+        .catch(error => {
+            messageDiv.classList.remove('hidden');
+            messageDiv.className = 'rounded-md bg-red-50 p-4';
+            messagePara.className = 'text-sm text-red-700';
+            messagePara.textContent = 'An error occurred. Please try again.';
+        })
+        .finally(() => {
+            // Reset submit button state
+            submitButton.disabled = false;
+            submitButton.innerHTML = `
+                <span>Send Reset Link</span>
+                <svg class="ml-2 -mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            `;
+        });
+    });
+
+    // Support Modal Functions
+    function openSupportModal() {
+        document.getElementById('supportModal').classList.remove('hidden');
+        document.getElementById('supportEmail').focus();
+    }
+
+    function closeSupportModal() {
+        document.getElementById('supportModal').classList.add('hidden');
+        document.getElementById('supportMessageDisplay').classList.add('hidden');
+        document.getElementById('supportForm').reset();
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('supportModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeSupportModal();
+        }
+    });
+
+    // Handle support form submission
+    document.getElementById('supportForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const messageDiv = document.getElementById('supportMessageDisplay');
+        const messagePara = messageDiv.querySelector('p');
+        const submitButton = this.querySelector('button[type="submit"]');
+
+        // Disable submit button and show loading state
+        submitButton.disabled = true;
+        submitButton.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Submitting...
+        `;
+
+        // Submit support ticket
+        fetch('submit_support.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            messageDiv.classList.remove('hidden');
+            if (data.success) {
+                messageDiv.className = 'rounded-md bg-green-50 p-4';
+                messagePara.className = 'text-sm text-green-700';
+                messagePara.textContent = data.message;
+                setTimeout(closeSupportModal, 3000);
+            } else {
+                messageDiv.className = 'rounded-md bg-red-50 p-4';
+                messagePara.className = 'text-sm text-red-700';
+                messagePara.textContent = data.error;
+            }
+        })
+        .catch(error => {
+            messageDiv.classList.remove('hidden');
+            messageDiv.className = 'rounded-md bg-red-50 p-4';
+            messagePara.className = 'text-sm text-red-700';
+            messagePara.textContent = 'An error occurred. Please try again.';
+        })
+        .finally(() => {
+            // Reset submit button state
+            submitButton.disabled = false;
+            submitButton.innerHTML = `
+                <span>Submit</span>
+                <svg class="ml-2 -mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            `;
+        });
+    });
+</script>
 
 <script src="index.js"></script>
 </body>

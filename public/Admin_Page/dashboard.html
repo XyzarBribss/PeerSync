@@ -13,10 +13,12 @@
             border: none;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
-        .widget .card:hover {
+        .widget .hover-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
         .value-widget {
             font-size: 2rem;
@@ -24,7 +26,7 @@
             margin-bottom: 0.5rem;
         }
         .title-widget {
-            color: #666;
+            color: rgba(255, 255, 255, 0.9);
             font-size: 1rem;
         }
         .chart-container {
@@ -34,7 +36,7 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             margin-bottom: 1.5rem;
             position: relative;
-            height: 400px; /* Fixed height */
+            height: 400px;
         }
         .recent-activity {
             background: white;
@@ -101,56 +103,64 @@
                 <!-- Stats Cards -->
                 <div class="row mb-4 widget">
                     <div class="col-md-3 mb-4">
-                        <div class="card bg-primary text-white">
-                            <div class="card-body">
-                                <div class="float-start">
-                                    <h3 class="value-widget" id="activeUsers">0</h3>
-                                    <label class="title-widget text-white">Active Users</label>
-                                </div>
-                                <div class="float-end">
-                                    <i class="mdi mdi-account-multiple mdi-48px"></i>
+                        <a href="view_users.html" class="text-decoration-none">
+                            <div class="card bg-primary text-white hover-card">
+                                <div class="card-body">
+                                    <div class="float-start">
+                                        <h3 class="value-widget" id="activeUsers">0</h3>
+                                        <label class="title-widget text-white">Active Users</label>
+                                    </div>
+                                    <div class="float-end">
+                                        <i class="mdi mdi-account-multiple mdi-48px"></i>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     <div class="col-md-3 mb-4">
-                        <div class="card bg-warning text-white">
-                            <div class="card-body">
-                                <div class="float-start">
-                                    <h3 class="value-widget" id="totalReports">0</h3>
-                                    <label class="title-widget text-white">Pending Reports</label>
-                                </div>
-                                <div class="float-end">
-                                    <i class="mdi mdi-flag-variant mdi-48px"></i>
+                        <a href="index_timeline_reports.html" class="text-decoration-none">
+                            <div class="card bg-warning text-white hover-card">
+                                <div class="card-body">
+                                    <div class="float-start">
+                                        <h3 class="value-widget" id="totalReports">0</h3>
+                                        <label class="title-widget text-white">Pending Reports</label>
+                                    </div>
+                                    <div class="float-end">
+                                        <i class="mdi mdi-flag-variant mdi-48px"></i>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     <div class="col-md-3 mb-4">
-                        <div class="card bg-success text-white">
-                            <div class="card-body">
-                                <div class="float-start">
-                                    <h3 class="value-widget" id="totalBubbles">0</h3>
-                                    <label class="title-widget text-white">Active Bubbles</label>
-                                </div>
-                                <div class="float-end">
-                                    <i class="mdi mdi-account-group mdi-48px"></i>
+                        <a href="View_Bubbles.html" class="text-decoration-none">
+                            <div class="card bg-success text-white hover-card">
+                                <div class="card-body">
+                                    <div class="float-start">
+                                        <h3 class="value-widget" id="totalBubbles">0</h3>
+                                        <label class="title-widget text-white">Active Bubbles</label>
+                                    </div>
+                                    <div class="float-end">
+                                        <i class="mdi mdi-account-group mdi-48px"></i>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     <div class="col-md-3 mb-4">
-                        <div class="card bg-info text-white">
-                            <div class="card-body">
-                                <div class="float-start">
-                                    <h3 class="value-widget" id="totalUsers">0</h3>
-                                    <label class="title-widget text-white">New Users Today</label>
-                                </div>
-                                <div class="float-end">
-                                    <i class="mdi mdi-account-plus mdi-48px"></i>
+                        <a href="admin_messages.html" class="text-decoration-none">
+                            <div class="card bg-info text-white hover-card">
+                                <div class="card-body">
+                                    <div class="float-start">
+                                        <h3 class="value-widget" id="totalUsers">0</h3>
+                                        <label class="title-widget text-white">New Messages</label>
+                                    </div>
+                                    <div class="float-end">
+                                        <i class="mdi mdi-message-text mdi-48px"></i>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                 </div>
 
@@ -162,12 +172,37 @@
                             <canvas id="activityChart"></canvas>
                         </div>
                     </div>
-                    <div class="col-md-4 mb-4">
-                        <div class="recent-activity">
-                            <h5 class="mb-4">Recent Activity</h5>
-                            <ul id="recentActivities">
-                                <!-- Activity items will be dynamically added here -->
-                            </ul>
+                    <div class="col-md-4">
+                        <!-- System Health Panel -->
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title mb-4">System Health</h5>
+                                <div class="mb-4">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Server Status</span>
+                                        <span class="badge bg-success" id="serverStatus">Online</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>API Health</span>
+                                        <span class="badge bg-success" id="apiHealth">Operational</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Database Load</span>
+                                        <div class="progress w-50">
+                                            <div class="progress-bar bg-info" id="dbLoad" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Memory Usage</span>
+                                        <div class="progress w-50">
+                                            <div class="progress-bar bg-warning" id="memoryUsage" role="progressbar" style="width: 40%;" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100">40%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <small class="text-muted">Last updated: <span id="lastUpdated">Just now</span></small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -180,6 +215,34 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
+    <script>
+        // Store the collapse state in localStorage
+        const collapseState = localStorage.getItem('sidebarState');
+        if (collapseState === 'open') {
+            document.getElementById('collapseExample').classList.add('show');
+        }
+
+        // Add event listener to store collapse state
+        document.querySelector('[data-bs-toggle="collapse"]').addEventListener('click', function() {
+            const collapseElement = document.getElementById('collapseExample');
+            if (collapseElement.classList.contains('show')) {
+                localStorage.setItem('sidebarState', 'closed');
+            } else {
+                localStorage.setItem('sidebarState', 'open');
+            }
+        });
+
+        // Highlight active page
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPage = window.location.pathname.split('/').pop();
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                if (link.getAttribute('href') === currentPage) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
     <script>
         let autoRefreshInterval;
         const REFRESH_INTERVAL = 30000; // 30 seconds
@@ -354,6 +417,36 @@
                 autoRefreshInterval = setInterval(updateDashboard, REFRESH_INTERVAL);
             }
         });
+    </script>
+    <script>
+        // Function to update system health metrics
+        function updateSystemHealth() {
+            // In a real application, these would be fetched from your backend
+            const dbLoad = Math.floor(Math.random() * 60) + 20; // Random value between 20-80%
+            const memoryUsage = Math.floor(Math.random() * 40) + 30; // Random value between 30-70%
+            
+            // Update progress bars
+            document.getElementById('dbLoad').style.width = dbLoad + '%';
+            document.getElementById('dbLoad').textContent = dbLoad + '%';
+            document.getElementById('memoryUsage').style.width = memoryUsage + '%';
+            document.getElementById('memoryUsage').textContent = memoryUsage + '%';
+            
+            // Update status badges
+            document.getElementById('serverStatus').className = 'badge ' + (Math.random() > 0.1 ? 'bg-success' : 'bg-danger');
+            document.getElementById('serverStatus').textContent = Math.random() > 0.1 ? 'Online' : 'Issues Detected';
+            
+            document.getElementById('apiHealth').className = 'badge ' + (Math.random() > 0.1 ? 'bg-success' : 'bg-warning');
+            document.getElementById('apiHealth').textContent = Math.random() > 0.1 ? 'Operational' : 'Degraded';
+            
+            // Update timestamp
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+        }
+
+        // Update system health every 30 seconds
+        setInterval(updateSystemHealth, 30000);
+        
+        // Initial system health update
+        updateSystemHealth();
     </script>
 </body>
 </html>
