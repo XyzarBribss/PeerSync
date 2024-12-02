@@ -217,12 +217,17 @@ function joinBubble() {
 </head>
 <body class="bg-blue-50">
     <!-- Navbar -->
-    <nav class="navbar bg-secondary-100 text-white  flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;}">
+    <nav class="navbar bg-secondary-100 text-white flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;">
         <div class="flex items-center">
-            <a href="indexTimeline.php"><img src="../public/ps.png" alt="Peerync Logo" class="h-16 w-16"></a>
+            <a href="indexTimeline.php"><img src="../public/ps.png" alt="Peerync Logo" class="h-18 w-16"></a>
             <span class="text-2xl font-bold">PeerSync</span>
         </div>
-        <div class="flex items-center">
+        <div class="flex items-center space-x-4">
+            <!-- Notifications Button -->
+            <button id="notificationsButton" class="text-white hover:text-gray-200 relative">
+                <i class="fas fa-bell text-xl"></i>
+                <span class="notification-badge hidden absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">0</span>
+            </button>
             <a href="exploreBubble.php" class="ml-4 hover:bg-blue-400 p-2 rounded">
                 <i class="fas fa-globe fa-lg"></i>
             </a>
@@ -242,6 +247,23 @@ function joinBubble() {
         </div>
     </nav>
 
+    <!-- Notifications Modal -->
+    <div id="notificationsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="bg-white w-96 max-w-lg mx-auto mt-20 rounded-lg shadow-lg">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Notifications</h3>
+                <button id="closeNotificationsModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="notificationsList" class="max-h-96 overflow-y-auto">
+                <div id="notificationsLoader" class="text-center py-4 hidden">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Leftmost Sidebar -->
     <div id="sidebar" class="fixed top-0 left-0 h-full mt-10 text-white z-50 flex flex-col items-center sidebar transition-all duration-300 shadow-lg border-r border-gray-300" style="width: 64px; background-color: rgb(70 130 180 / 50%);">
         <ul id="bubble-list" class="space-y-4 mt-10">
@@ -255,27 +277,35 @@ function joinBubble() {
         <div class="p-4 mx-auto w-full max-w-4xl">
             <div class="space-y-4">
                 <div class="bg-white p-4 shadow rounded mb-4">
-                    <div class="flex items-center mb-4">
-                        <img src="<?= htmlspecialchars($post['user_profile_image']) ?>" alt="<?= htmlspecialchars($post['username']) ?>" class="w-10 h-10 rounded-full mr-3">
-                        <div>
-                            <div class="text-gray-700 font-bold"><?= htmlspecialchars($post['username']) ?></div>
-                            <div class="text-gray-500 text-sm"><?= htmlspecialchars($post['bubble_name']) ?> • <?= date('F j, Y, g:i a', strtotime($post['created_at'])) ?></div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <img src="<?= htmlspecialchars($post['user_profile_image']) ?>" alt="<?= htmlspecialchars($post['username']) ?>" class="w-10 h-10 rounded-full mr-3">
+                            <div>
+                                <div class="text-gray-700 font-bold"><?= htmlspecialchars($post['username']) ?></div>
+                                <div class="text-gray-500 text-sm"><?= htmlspecialchars($post['bubble_name']) ?> • <?= date('F j, Y, g:i a', strtotime($post['created_at'])) ?></div>
+                            </div>
                         </div>
-                        <div class="relative ml-auto">
-                            <?php if ($post['user_id'] == $user_id): ?>
-                                <button type="button" class="inline-flex justify-center shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none" id="menu-button-<?= $post['id'] ?>" aria-expanded="false" aria-haspopup="menu">
-                                    <i class="fas fa-ellipsis-h"></i>
-                                </button>
-                                <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="menu-button-<?= $post['id'] ?>" tabindex="-1" id="menu-<?= $post['id'] ?>">
-                                    <div class="py-1" role="none">
-                                    <form action="postDetails.php?post_id=<?= htmlspecialchars($post_id) ?>" method="post">
-                                            <a href="#" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="menu-item-3" onclick="openEditModal(<?= htmlspecialchars($post_id) ?>)">Edit</a>
-                                            <input type="hidden" name="delete_post_id" value="<?= htmlspecialchars($post_id) ?>">
-                                            <button type="submit" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="menu-item-2">Delete</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
+                        <div class="relative">
+                            <button class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors" onclick="togglePostMenu()">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <div id="postMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
+                                <?php if ($post['user_id'] == $user_id): ?>
+                                    <!-- Edit and Delete options for post owner -->
+                                    <button onclick="openEditModal()" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-edit mr-2"></i>Edit Post
+                                    </button>
+                                    <button onclick="deletePost(<?= $post['id'] ?>)" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                        <i class="fas fa-trash-alt mr-2"></i>Delete Post
+                                    </button>
+                                <?php else: ?>
+                                    <!-- Report option for other users' posts -->
+                                    <button onclick="openReportModal(<?= $post['id'] ?>, '<?= htmlspecialchars($post['message']) ?>', '<?= htmlspecialchars($post['bubble_name']) ?>', <?= $post['user_id'] ?>)" 
+                                            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-flag mr-2"></i>Report Post
+                                    </button>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                     <a href="postDetails.php?post_id=<?= $post['id'] ?>" class="block">
@@ -737,10 +767,10 @@ function toggleReplies(commentId) {
                         <div class="flex items-center mb-4">
                             <?php if (!empty($profile_image_base64)): ?>
                                 <img src="<?= $profile_image_base64 ?>" alt="<?= htmlspecialchars($post['bubble_name']) ?>" 
-                                     class="w-12 h-12 rounded-full mr-3 border-2 border-[rgb(70,130,180)]">
+                                     class="w-12 h-12 rounded-full mx-auto">
                             <?php else: ?>
                                 <img src="default-profile.png" alt="Default Profile Image" 
-                                     class="w-12 h-12 rounded-full mr-3 border-2 border-[rgb(70,130,180)]">
+                                     class="w-12 h-12 rounded-full mx-auto border-2 border-[rgb(70,130,180)]">
                             <?php endif; ?>
                             <div>
                                 <h3 class="font-bold text-gray-800"><?= htmlspecialchars($post['bubble_name']) ?></h3>
@@ -905,5 +935,61 @@ window.onclick = function(event) {
     }
 }
     </script>
+
+    <script>
+    // Notifications functionality
+    let notificationsOffset = 0;
+    let isLoadingNotifications = false;
+
+    async function loadNotifications() {
+        if (isLoadingNotifications) return;
+        
+        isLoadingNotifications = true;
+        $('#notificationsLoader').removeClass('hidden');
+
+        try {
+            const response = await fetch(`api/get_notifications.php?offset=${notificationsOffset}`);
+            const html = await response.text();
+            
+            if (notificationsOffset === 0) {
+                $('#notificationsList').empty();
+            }
+            
+            $('#notificationsList').append(html);
+            notificationsOffset += 10;
+            
+        } catch (error) {
+            $('#notificationsList').html("<div class='text-red-500 text-center p-4'>Failed to load notifications</div>");
+        }
+        
+        isLoadingNotifications = false;
+        $('#notificationsLoader').addClass('hidden');
+    }
+
+    // Event Listeners
+    $('#notificationsButton').on('click', function() {
+        notificationsOffset = 0;
+        loadNotifications();
+        $('#notificationsModal').removeClass('hidden');
+    });
+
+    $('#closeNotificationsModal').on('click', function() {
+        $('#notificationsModal').addClass('hidden');
+    });
+
+    // Load more notifications when scrolling to bottom
+    $('#notificationsList').on('scroll', function() {
+        if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight - 20) {
+            loadNotifications();
+        }
+    });
+
+    // Close modal when clicking outside
+    $(window).on('click', function(e) {
+        if ($(e.target).is('#notificationsModal')) {
+            $('#notificationsModal').addClass('hidden');
+        }
+    });
+</script>
 </body>
 </html>
