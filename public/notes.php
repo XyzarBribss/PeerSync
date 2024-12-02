@@ -1,6 +1,7 @@
 <?php
 session_start();
 include 'config.php';
+
 $user_id = $_SESSION['user_id'];
 
 $query = "SELECT * FROM users WHERE id = ?";
@@ -111,6 +112,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $delete_note_stmt->close();
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
+    $search_term = '%' . $_GET['search_term'] . '%';
+    $notebook_id = $_GET['notebook_id'] ?? null;
+    
+    if ($notebook_id) {
+        $search_query = "SELECT * FROM notes WHERE NotebookID = ? AND Title LIKE ?";
+        $search_stmt = $conn->prepare($search_query);
+        $search_stmt->bind_param("is", $notebook_id, $search_term);
+        $search_stmt->execute();
+        $search_result = $search_stmt->get_result();
+        $notes = [];
+        while ($row = $search_result->fetch_assoc()) {
+            $notes[] = $row;
+        }
+        $search_stmt->close();
+
+        if (isset($_GET['ajax'])) {
+            header('Content-Type: application/json');
+            echo json_encode(['notes' => $notes]);
+            exit();
+        }
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && isset($_GET['notebook_id'])) {
+    $notebook_id = $_GET['notebook_id'];
+    
+    // If search term is empty or not set, return all notes
+    if (empty($_GET['search_term'])) {
+        $query = "SELECT * FROM notes WHERE NotebookID = ? ORDER BY CreatedAt DESC";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $notebook_id);
+    } else {
+        $search_term = '%' . $_GET['search_term'] . '%';
+        $query = "SELECT * FROM notes WHERE NotebookID = ? AND Title LIKE ? ORDER BY CreatedAt DESC";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("is", $notebook_id, $search_term);
+    }
+    
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $notes = [];
+    while ($row = $result->fetch_assoc()) {
+        $notes[] = $row;
+    }
+    $stmt->close();
+    
+    header('Content-Type: application/json');
+    echo json_encode(['notes' => $notes]);
+    exit();
+}
+
 $notebook_id = $_GET['notebook_id'] ?? null;
 if ($notebook_id) {
     $notes_query = "SELECT * FROM notes WHERE NotebookID = ?";
@@ -125,20 +178,6 @@ if ($notebook_id) {
     $notes_stmt->close();
 } else {
     $notes = [];
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
-    $search_term = '%' . $_GET['search_term'] . '%';
-    $search_query = "SELECT * FROM notes WHERE NotebookID = ? AND Title LIKE ?";
-    $search_stmt = $conn->prepare($search_query);
-    $search_stmt->bind_param("is", $notebook_id, $search_term);
-    $search_stmt->execute();
-    $search_result = $search_stmt->get_result();
-    $notes = [];
-    while ($row = $search_result->fetch_assoc()) {
-        $notes[] = $row;
-    }
-    $search_stmt->close();
 }
 ?>
 
@@ -301,84 +340,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
                         </div>
                     <?php endif; ?>
                 </div>
-
-                <script>
-                    // Close all note menus when clicking outside
-                    document.addEventListener('click', function(event) {
-                        const menus = document.querySelectorAll('[id^="noteMenu_"]');
-                        menus.forEach(menu => {
-                            if (!menu.contains(event.target) && !event.target.closest('button[onclick^="toggleNoteMenu"]')) {
-                                menu.classList.add('hidden');
-                            }
-                        });
-                    });
-
-                    function toggleNoteMenu(noteId) {
-                        const menu = document.getElementById(`noteMenu_${noteId}`);
-                        const allMenus = document.querySelectorAll('[id^="noteMenu_"]');
-                        
-                        // Hide all other menus
-                        allMenus.forEach(m => {
-                            if (m !== menu) {
-                                m.classList.add('hidden');
-                            }
-                        });
-                        
-                        // Toggle current menu
-                        menu.classList.toggle('hidden');
-                    }
-
-                    function renameNote(noteId, currentTitle) {
-                        const newTitle = prompt('Enter new title:', currentTitle);
-                        if (newTitle && newTitle.trim() !== '' && newTitle !== currentTitle) {
-                            // Make an AJAX call to update the note title
-                            fetch('notes.php', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded',
-                                },
-                                body: `action=rename&note_id=${noteId}&new_title=${encodeURIComponent(newTitle)}`
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    location.reload();
-                                } else {
-                                    alert('Failed to rename note. Please try again.');
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error:', error);
-                                alert('An error occurred while renaming the note.');
-                            });
-                        }
-                    }
-
-                    function deleteNote(noteId) {
-                        if (confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
-                            // Make an AJAX call to delete the note
-                            fetch('notes.php', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded',
-                                },
-                                body: `action=delete&note_id=${noteId}`
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    location.reload();
-                                } else {
-                                    alert('Failed to delete note. Please try again.');
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error:', error);
-                                alert('An error occurred while deleting the note.');
-                            });
-                        }
-                    }
-                </script>
             </div>
 
             <div class="flex-1 overflow-hidden bg-white">
@@ -406,157 +367,185 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_term'])) {
         </div>
     </div>
 
-    <!-- Add Note Modal -->
-    <div id="modalBackdrop" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
-        <div class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl">
-            <form id="noteForm" action="notes.php" method="POST" enctype="multipart/form-data" 
-                class="bg-white rounded-xl shadow-2xl p-6 m-4">
-                <input type="hidden" name="notebook_id" value="<?php echo htmlspecialchars($notebook_id); ?>">
-                <input type="text" name="title" placeholder="Note Title" 
-                    class="w-full px-4 py-2 text-xl font-semibold border-2 border-gray-200 rounded-lg mb-4" required>
-                <textarea id="noteContent" name="content" placeholder="Start writing your note..." 
-                    class="w-full border-2 border-gray-200 rounded-lg mb-4" required></textarea>
-                <div class="flex justify-end gap-3">
-                    <button type="button" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600" 
-                        onclick="hideNoteModal()">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" 
-                        onclick="saveNotes()">Save Note</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <script>
+        // Initialize TinyMCE
+        tinymce.init({
+            selector: '#noteDetailsContent',
+            plugins: [
+                'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 
+                'media', 'searchreplace', 'table', 'visualblocks', 'wordcount', 'save'
+            ],
+            toolbar: 'save | undo redo | blocks fontfamily fontsize | bold italic underline strikethrough backcolor forecolor | link image media table | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+            height: 'calc(100vh - 200px)',
+            autoresize_overflow_padding: 0,
+            autoresize_bottom_margin: 0,
+            resize: true,
+            overflow_y: 'auto',
+            menubar: true,
+            branding: false,
+            save_enablewhendirty: false,
+            save_onsavecallback: function() {
+                saveNoteChanges(new Event('save'));
+                return false;
+            },
+            setup: function(editor) {
+                editor.on('init', function() {
+                    if (typeof initialNoteContent !== 'undefined') {
+                        editor.setContent(initialNoteContent);
+                    }
+                });
+            }
+        });
 
-<script>
-    // Initialize TinyMCE
-    tinymce.init({
-        selector: '#noteContent, #noteDetailsContent',
-        plugins: [
-            'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 
-            'media', 'searchreplace', 'table', 'visualblocks', 'wordcount', 'save'
-        ],
-        toolbar: 'save | undo redo | blocks fontfamily fontsize | bold italic underline strikethrough backcolor forecolor | link image media table | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
-        height: 'calc(100vh - 200px)',
-        autoresize_overflow_padding: 0,
-        autoresize_bottom_margin: 0,
-        resize: true,
-        overflow_y: 'auto',
-        menubar: true,
-        branding: false,
-        save_enablewhendirty: false,
-        save_onsavecallback: function() {
-            saveNoteChanges(new Event('save'));
-            return false;
-        },
-        setup: function(editor) {
-            editor.on('init', function() {
-                // This ensures TinyMCE is fully loaded before we try to set content
-                if (typeof initialNoteContent !== 'undefined') {
-                    editor.setContent(initialNoteContent);
+        let currentNoteId = null;
+
+        function showNoteDetails(note) {
+            document.getElementById('emptyStateMessage').classList.add('hidden');
+            document.getElementById('noteDetailsForm').classList.remove('hidden');
+            document.getElementById('update_note_id').value = note.NoteID;
+            document.getElementById('noteDetailsTitle').value = note.Title;
+            currentNoteId = note.NoteID;
+            
+            if (tinymce.get('noteDetailsContent')) {
+                tinymce.get('noteDetailsContent').setContent(note.Content || '');
+            } else {
+                setTimeout(function() {
+                    if (tinymce.get('noteDetailsContent')) {
+                        tinymce.get('noteDetailsContent').setContent(note.Content || '');
+                    }
+                }, 500);
+            }
+        }
+
+        function saveNoteChanges(event) {
+            event.preventDefault();
+            tinymce.triggerSave();
+            
+            const form = document.getElementById('noteDetailsForm');
+            const formData = new FormData(form);
+            
+            fetch('notes.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Refresh the page to show updated content
+                    window.location.reload();
+                } else {
+                    console.error('Failed to save changes');
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
             });
         }
-    });
 
-    let currentNoteId = null;
-
-    function showNoteDetails(note) {
-        document.getElementById('emptyStateMessage').classList.add('hidden');
-        document.getElementById('noteDetailsForm').classList.remove('hidden');
-        document.getElementById('update_note_id').value = note.NoteID;
-        document.getElementById('noteDetailsTitle').value = note.Title;
-        currentNoteId = note.NoteID;
-        
-        if (tinymce.get('noteDetailsContent')) {
-            tinymce.get('noteDetailsContent').setContent(note.Content || '');
-        } else {
-            setTimeout(function() {
-                if (tinymce.get('noteDetailsContent')) {
-                    tinymce.get('noteDetailsContent').setContent(note.Content || '');
-                }
-            }, 500);
+        function hideNoteDetails() {
+            document.getElementById('noteDetailsForm').classList.add('hidden');
+            document.getElementById('emptyStateMessage').classList.remove('hidden');
+            currentNoteId = null;
         }
-    }
 
-    function saveNoteChanges(event) {
-        event.preventDefault();
-        tinymce.triggerSave();
-        
-        const form = document.getElementById('noteDetailsForm');
-        const formData = new FormData(form);
-        
-        fetch('notes.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (response.ok) {
-                // Refresh the page to show updated content
-                window.location.reload();
-            } else {
-                console.error('Failed to save changes');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
+        function showNoteModal() {
+            document.getElementById('modalBackdrop').classList.remove('hidden');
+            document.getElementById('noteForm').classList.remove('hidden');
+        }
+
+        function hideNoteModal() {
+            document.getElementById('modalBackdrop').classList.add('hidden');
+            document.getElementById('noteForm').classList.add('hidden');
+        }
+
+        function saveNotes() {
+            tinymce.triggerSave();
+        }
+
+        document.getElementById('profileImage').addEventListener('click', function() {
+            const dropdownMenu = this.nextElementSibling;
+            dropdownMenu.classList.toggle('hidden');
         });
-    }
 
-    function hideNoteDetails() {
-        document.getElementById('noteDetailsForm').classList.add('hidden');
-        document.getElementById('emptyStateMessage').classList.remove('hidden');
-        currentNoteId = null;
-    }
+        // Add debounce to search function
+        let searchTimeout;
+        document.getElementById('searchNotes').addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(searchNotes, 300);
+        });
 
-    function showNoteModal() {
-        document.getElementById('modalBackdrop').classList.remove('hidden');
-        document.getElementById('noteForm').classList.remove('hidden');
-    }
+        function searchNotes() {
+            const searchTerm = document.getElementById('searchNotes').value.trim();
+            const urlParams = new URLSearchParams(window.location.search);
+            const notebookId = urlParams.get('notebook_id');
 
-    function hideNoteModal() {
-        document.getElementById('modalBackdrop').classList.add('hidden');
-        document.getElementById('noteForm').classList.add('hidden');
-    }
+            // Make AJAX request
+            fetch(`notes.php?search_term=${encodeURIComponent(searchTerm)}&notebook_id=${notebookId}&ajax=1`)
+                .then(response => response.json())
+                .then(data => {
+                    const notesContainer = document.querySelector('.grid.gap-2.p-2');
+                    
+                    if (data.notes.length === 0) {
+                        notesContainer.innerHTML = `
+                            <p class="text-gray-600 text-center py-8">No notes found${searchTerm ? ' matching your search' : ''}.</p>
+                        `;
+                        return;
+                    }
 
-    function saveNotes() {
-        tinymce.triggerSave();
-    }
-
-    document.getElementById('profileImage').addEventListener('click', function() {
-        const dropdownMenu = this.nextElementSibling;
-        dropdownMenu.classList.toggle('hidden');
-    });
-
-    function searchNotes() {
-    const searchTerm = document.getElementById('searchNotes').value.toLowerCase();
-    const notesList = document.getElementById('notesList');
-    const notes = notesList.getElementsByTagName('li');
-    let hasVisibleNotes = false;
-
-    for (let note of notes) {
-        const title = note.querySelector('h3').textContent.toLowerCase();
-        const content = note.querySelector('p').textContent.toLowerCase();
-        
-        if (title.includes(searchTerm) || content.includes(searchTerm)) {
-            note.style.display = '';
-            hasVisibleNotes = true;
-        } else {
-            note.style.display = 'none';
+                    notesContainer.innerHTML = data.notes.map(note => `
+                        <div class="bg-white rounded-lg border shadow-sm cursor-pointer transition-colors hover:bg-gray-50 relative group"
+                            onclick='showNoteDetails(${JSON.stringify(note)})'>
+                            <div class="p-4">
+                                <div class="flex justify-between items-start">
+                                    <h3 class="text-base font-semibold">${escapeHtml(note.Title)}</h3>
+                                    <div class="relative" onclick="event.stopPropagation()">
+                                        <button class="p-1 rounded-full hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100" 
+                                            onclick="toggleNoteMenu(${note.NoteID})">
+                                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                                            </svg>
+                                        </button>
+                                        <div id="noteMenu_${note.NoteID}" 
+                                            class="absolute right-0 mt-1 w-36 bg-white rounded-lg shadow-lg border hidden z-50">
+                                            <div class="py-1">
+                                                <button onclick="renameNote(${note.NoteID}, '${escapeHtml(note.Title)}')" 
+                                                    class="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors flex items-center gap-2">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                    </svg>
+                                                    Rename
+                                                </button>
+                                                <button onclick="deleteNote(${note.NoteID})" 
+                                                    class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                    </svg>
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm text-gray-500">
+                                    <span>${new Date(note.CreatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
         }
-    }
 
-    // Show/hide "no results" message
-    let noResultsMsg = notesList.querySelector('.no-results-message');
-    if (!hasVisibleNotes) {
-        if (!noResultsMsg) {
-            noResultsMsg = document.createElement('p');
-            noResultsMsg.className = 'no-results-message text-gray-600 text-center py-8';
-            noResultsMsg.textContent = 'No notes found matching your search.';
-            notesList.appendChild(noResultsMsg);
+        // Helper function to escape HTML special characters
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
-    } else if (noResultsMsg) {
-        noResultsMsg.remove();
-    }
-}
 
         // Fetch the list of bubbles the user has joined
         function fetchJoinedBubbles() {
