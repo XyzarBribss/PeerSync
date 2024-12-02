@@ -990,6 +990,76 @@ window.onclick = function(event) {
             $('#notificationsModal').addClass('hidden');
         }
     });
+=======
+    // Function to toggle post menu dropdown
+    function togglePostMenu() {
+        const menu = document.getElementById('postMenu');
+        menu.classList.toggle('hidden');
+    }
+
+    // Close post menu when clicking outside
+    document.addEventListener('click', function(event) {
+        const menu = document.getElementById('postMenu');
+        const menuButton = document.querySelector('.fa-ellipsis-h').parentElement;
+        if (!menuButton.contains(event.target) && !menu.contains(event.target)) {
+            menu.classList.add('hidden');
+        }
+    });
+
+    // Function to handle post deletion
+    function deletePost(postId) {
+        if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+            const formData = new FormData();
+            formData.append('delete_post_id', postId);
+
+            fetch('postDetails.php?post_id=' + postId, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    window.location.href = 'indexTimeline.php';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the post.');
+            });
+        }
+    }
+
+    // Function to open edit modal
+    function openEditModal() {
+        document.getElementById('editPostModal').style.display = 'block';
+        document.getElementById('postMenu').classList.add('hidden');
+    }
+
+    // Function to close edit modal
+    function closeEditModal() {
+        document.getElementById('editPostModal').style.display = 'none';
+    }
+
+    // Function to open report modal
+    function openReportModal(postId, postContent, bubbleName, postOwnerId) {
+        const reportForm = document.getElementById('reportForm');
+        reportForm.setAttribute('data-post-id', postId);
+        reportForm.setAttribute('data-post-content', postContent);
+        reportForm.setAttribute('data-bubble-name', bubbleName);
+        reportForm.setAttribute('data-post-owner-id', postOwnerId);
+        document.getElementById('reportModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    // Function to close report modal
+    function closeReportModal() {
+        document.getElementById('reportModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        document.getElementById('reportForm').reset();
+        document.getElementById('otherDetailsContainer').classList.add('hidden');
+    }
 </script>
 </body>
 </html>
