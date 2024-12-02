@@ -49,6 +49,7 @@ $stmt->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Timeline Thread</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="style.css">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -170,8 +171,9 @@ $stmt->close();
         </div>
         <div class="flex items-center space-x-4">
             <!-- Notifications Button -->
-            <button id="notificationsButton" class="text-white hover:text-gray-200">
+            <button id="notificationsButton" class="text-white hover:text-gray-200 relative">
                 <i class="fas fa-bell text-xl"></i>
+                <span class="notification-badge hidden absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">0</span>
             </button>
             <a href="exploreBubble.php" class="ml-4 hover:bg-blue-400 p-2 rounded">
                 <i class="fas fa-globe fa-lg"></i>
@@ -302,6 +304,7 @@ $stmt->close();
                                     <div id="postMenu-<?= $post['id'] ?>" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
                                         <?php if ($post['user_id'] == $logged_in_user_id): ?>
                                             <!-- Edit and Delete options for post owner -->
+
                                             <a href="editPost.php?post_id=<?= $post['id'] ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                                 <i class="fas fa-edit mr-2"></i>Edit Post
                                             </a>
@@ -466,13 +469,19 @@ $stmt->close();
 
     <!-- Notifications Modal -->
     <div id="notificationsModal" class="modal">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
+        <div class="modal-content max-w-lg mx-auto">
+            <div class="flex justify-between items-center mb-4 border-b pb-4">
                 <h2 class="text-xl font-bold">Notifications</h2>
-                <span id="closeNotificationsModal" class="close cursor-pointer">&times;</span>
+                <div class="flex items-center gap-4">
+                    <button id="markAllReadBtn" class="text-sm text-blue-600 hover:text-blue-800">Mark all as read</button>
+                    <span id="closeNotificationsModal" class="close cursor-pointer">&times;</span>
+                </div>
             </div>
-            <div id="notificationsList" class="space-y-4">
+            <div id="notificationsList" class="space-y-4 max-h-[70vh] overflow-y-auto">
                 <!-- Notifications will be dynamically loaded here -->
+            </div>
+            <div id="notificationsLoader" class="text-center py-4 hidden">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
             </div>
         </div>
     </div>
@@ -705,7 +714,76 @@ $stmt->close();
     </script>
     <script>
     $(document).ready(function() {
-        $('.like-button').click(function() {
+        // Notifications functionality
+        let notificationsOffset = 0;
+        let isLoadingNotifications = false;
+
+        async function loadNotifications() {
+            if (isLoadingNotifications) return;
+            
+            isLoadingNotifications = true;
+            $('#notificationsLoader').removeClass('hidden');
+
+            try {
+                const response = await fetch(`api/get_notifications.php?offset=${notificationsOffset}`);
+                const html = await response.text();
+                
+                if (notificationsOffset === 0) {
+                    $('#notificationsList').empty();
+                }
+                
+                $('#notificationsList').append(html);
+                notificationsOffset += 10;
+                
+            } catch (error) {
+                $('#notificationsList').html("<div class='text-red-500 text-center p-4'>Failed to load notifications</div>");
+            }
+            
+            isLoadingNotifications = false;
+            $('#notificationsLoader').addClass('hidden');
+        }
+
+        // Load more notifications when scrolling to bottom
+        $('#notificationsList').on('scroll', function() {
+            if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight - 20) {
+                loadNotifications();
+            }
+        });
+
+        // Event Listeners
+        $('#notificationsButton').on('click', function() {
+            notificationsOffset = 0;
+            loadNotifications();
+        });
+
+        $('#markAllReadBtn').on('click', function() {
+            fetch('api/mark_notifications_read.php', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    $('.notification-item').removeClass('bg-blue-50').addClass('bg-white');
+                    updateNotificationBadge(0);
+                }
+            })
+            .catch(error => {
+                console.error('Error marking notifications as read:', error);
+            });
+        });
+
+        $('#closeNotificationsModal').on('click', function() {
+            $('#notificationsModal').hide();
+        });
+
+        $(window).on('click', function(event) {
+            if ($(event.target).is('#notificationsModal')) {
+                $('#notificationsModal').hide();
+            }
+        });
+
+        // Like button functionality
+        $('.like-button').on('click', function() {
             const button = $(this);
             const postId = button.data('post-id');
             
@@ -717,14 +795,9 @@ $stmt->close();
                     try {
                         const data = JSON.parse(response);
                         if (data.success) {
-                            // Toggle the liked state
                             button.toggleClass('liked');
-                            
-                            // Update the like count text
                             const likeCountText = data.likes === 1 ? '1 Like' : data.likes + ' Likes';
                             button.find('span').text(likeCountText);
-                            
-                            // Add animation effect
                             button.find('i').addClass('animate-bounce');
                             setTimeout(() => {
                                 button.find('i').removeClass('animate-bounce');
@@ -741,26 +814,92 @@ $stmt->close();
                 }
             });
         });
+
+        async function openPostModal(postId) {
+            try {
+                const response = await fetch(`api/get_post.php?post_id=${postId}`);
+                const post = await response.json();
+                
+                if (post) {
+                    // Close notifications modal
+                    $('#notificationsModal').hide();
+                    
+                    // Fill and show post modal
+                    $('#postModalTitle').text(post.title || '');
+                    $('#postModalContent').text(post.message || '');
+                    if (post.image) {
+                        $('#postModalImage').attr('src', `data:image/jpeg;base64,${post.image}`).show();
+                    } else {
+                        $('#postModalImage').hide();
+                    }
+                    $('#postModal').show();
+                    
+                    // Mark notification as read
+                    fetch('api/mark_notification_read.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ post_id: postId })
+                    });
+                }
+            } catch (error) {
+                console.error('Error opening post:', error);
+            }
+        }
     });
     </script>
 
     <script>
-        // Notifications Modal functionality
-        const notificationsModal = document.getElementById('notificationsModal');
-        const notificationsBtn = document.getElementById('notificationsButton');
-        const closeNotificationsModal = document.getElementById('closeNotificationsModal');
-
-        notificationsBtn.onclick = function() {
-            notificationsModal.style.display = "block";
+        // Toggle post menu dropdown
+        function togglePostMenu(postId) {
+            const menu = document.getElementById(`postMenu-${postId}`);
+            // Close all other open menus first
+            document.querySelectorAll('[id^="postMenu-"]').forEach(m => {
+                if (m.id !== `postMenu-${postId}`) {
+                    m.classList.add('hidden');
+                }
+            });
+            menu.classList.toggle('hidden');
         }
 
-        closeNotificationsModal.onclick = function() {
-            notificationsModal.style.display = "none";
-        }
+        // Close post menus when clicking outside
+        document.addEventListener('click', function(event) {
+            const menuButton = event.target.closest('.relative');
+            if (!menuButton) {
+                document.querySelectorAll('[id^="postMenu-"]').forEach(menu => {
+                    menu.classList.add('hidden');
+                });
+            }
+        });
 
-        window.onclick = function(event) {
-            if (event.target == notificationsModal) {
-                notificationsModal.style.display = "none";
+        // Function to handle post deletion
+        function deletePost(postId) {
+            if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+                fetch(`deletePost.php?post_id=${postId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove the post element from DOM and show success message
+                        const postElement = document.querySelector(`[data-post-id="${postId}"]`).closest('.bg-white');
+                        postElement.remove();
+                        // Show success message
+                        const successMessage = document.createElement('div');
+                        successMessage.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4';
+                        successMessage.innerHTML = 'Post deleted successfully';
+                        document.querySelector('.p-4.mx-auto').insertBefore(successMessage, document.querySelector('.mb-4'));
+                        // Remove success message after 3 seconds
+                        setTimeout(() => successMessage.remove(), 3000);
+                    } else {
+                        alert(data.error || 'Failed to delete post. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while deleting the post.');
+                });
             }
         }
     </script>
@@ -818,6 +957,26 @@ $stmt->close();
 </script>
 
 <script>
+    // Notifications Modal functionality
+    const notificationsModal = document.getElementById('notificationsModal');
+    const notificationsBtn = document.getElementById('notificationsButton');
+    const closeNotificationsModal = document.getElementById('closeNotificationsModal');
+
+    notificationsBtn.onclick = function() {
+        notificationsModal.style.display = "block";
+    }
+
+    closeNotificationsModal.onclick = function() {
+        notificationsModal.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target == notificationsModal) {
+            notificationsModal.style.display = "none";
+        }
+    }
+</script>
+=======
     // Function to toggle post menu dropdown
     function togglePostMenu(postId) {
         const menu = document.getElementById(`postMenu-${postId}`);
