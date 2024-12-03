@@ -110,12 +110,17 @@ $notebook_stmt->close();
 </head>
 <body class="bg-white h-screen flex flex-col">
     <!-- Navbar -->
-    <nav class="navbar bg-secondary-100 text-white flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;}">
+    <nav class="navbar bg-secondary-100 text-white flex justify-between items-center" style="background-color: rgb(43 84 126 / var(--tw-bg-opacity)) /* #2b547e */;">
         <div class="flex items-center">
-            <a href="indexTimeline.php"><img src="../public/ps.png" alt="Peerync Logo" class="h-16 w-16"></a>
+            <a href="indexTimeline.php"><img src="../public/ps.png" alt="Peerync Logo" class="h-18 w-16"></a>
             <span class="text-2xl font-bold">PeerSync</span>
         </div>
-        <div class="flex items-center">
+        <div class="flex items-center space-x-4">
+            <!-- Notifications Button -->
+            <button id="notificationsButton" class="text-white hover:text-gray-200 relative">
+                <i class="fas fa-bell text-xl"></i>
+                <span class="notification-badge hidden absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">0</span>
+            </button>
             <a href="exploreBubble.php" class="ml-4 hover:bg-blue-400 p-2 rounded">
                 <i class="fas fa-globe fa-lg"></i>
             </a>
@@ -125,7 +130,7 @@ $notebook_stmt->close();
             <a href="notebook.php" class="ml-4 hover:bg-blue-400 p-2 rounded">
                 <i class="fas fa-book fa-lg"></i>
             </a>
-            <div class="relative ml-4  p-4">
+            <div class="relative ml-4 p-4">
                 <img src="<?php echo htmlspecialchars($user['profile_image']); ?>" alt="Profile Image" class="w-10 h-10 rounded-full cursor-pointer" id="profileImage">
                 <div class="dropdown-menu absolute right-0 mt-1 w-48 bg-white border border-gray-300 rounded shadow-lg hidden">
                     <a href="profile.php" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Profile</a>
@@ -993,6 +998,79 @@ function toggleMemberList() {
 
 </script>
 
+<!-- Notifications Modal -->
+<div id="notificationsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="bg-white w-96 max-w-lg mx-auto mt-20 rounded-lg shadow-lg">
+        <div class="p-4 border-b flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Notifications</h3>
+            <button id="closeNotificationsModal" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="notificationsList" class="max-h-96 overflow-y-auto">
+            <div id="notificationsLoader" class="text-center py-4 hidden">
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Notifications functionality
+    let notificationsOffset = 0;
+    let isLoadingNotifications = false;
+
+    async function loadNotifications() {
+        if (isLoadingNotifications) return;
+        
+        isLoadingNotifications = true;
+        $('#notificationsLoader').removeClass('hidden');
+
+        try {
+            const response = await fetch(`api/get_notifications.php?offset=${notificationsOffset}`);
+            const html = await response.text();
+            
+            if (notificationsOffset === 0) {
+                $('#notificationsList').empty();
+            }
+            
+            $('#notificationsList').append(html);
+            notificationsOffset += 10;
+            
+        } catch (error) {
+            $('#notificationsList').html("<div class='text-red-500 text-center p-4'>Failed to load notifications</div>");
+        }
+        
+        isLoadingNotifications = false;
+        $('#notificationsLoader').addClass('hidden');
+    }
+
+    // Event Listeners
+    $('#notificationsButton').on('click', function() {
+        notificationsOffset = 0;
+        loadNotifications();
+        $('#notificationsModal').removeClass('hidden');
+    });
+
+    $('#closeNotificationsModal').on('click', function() {
+        $('#notificationsModal').addClass('hidden');
+    });
+
+    // Load more notifications when scrolling to bottom
+    $('#notificationsList').on('scroll', function() {
+        if ($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight - 20) {
+            loadNotifications();
+        }
+    });
+
+    // Close modal when clicking outside
+    $(window).on('click', function(e) {
+        if ($(e.target).is('#notificationsModal')) {
+            $('#notificationsModal').addClass('hidden');
+        }
+    });
+</script>
+
 <!-- Share Modal -->
 <div id="shareModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
     <div class="bg-white rounded-lg max-w-md mx-auto mt-20 p-6">
@@ -1005,8 +1083,8 @@ function toggleMemberList() {
         <form id="shareForm" onsubmit="handleShare(event)">
             <input type="hidden" name="bubble_id" value="<?php echo $bubble_id; ?>">
             <div class="mb-4">
-                <label class="block text-gray-700 mb-2">Select Notebook</label>
-                <select name="notebook_id" class="w-full p-3 border rounded-lg" required>
+                <label for="notebook_select" class="block text-gray-700 mb-2">Select Notebook</label>
+                <select id="notebook_select" name="notebook_id" class="w-full p-3 border rounded-lg" required>
                     <?php
                     // Add error handling and debugging
                     $user_notebooks_query = "SELECT id, name FROM notebooks WHERE user_id = ?";
@@ -1028,12 +1106,12 @@ function toggleMemberList() {
             <div class="mb-4">
                 <label class="block text-gray-700 mb-2">Permission Level</label>
                 <div class="space-y-2">
-                    <label class="flex items-center">
-                        <input type="radio" name="permission" value="view" checked>
+                    <label class="flex items-center" for="permission_view">
+                        <input type="radio" id="permission_view" name="permission" value="view" checked>
                         <span class="ml-2">View Only - Members can only read</span>
                     </label>
-                    <label class="flex items-center">
-                        <input type="radio" name="permission" value="edit">
+                    <label class="flex items-center" for="permission_edit">
+                        <input type="radio" id="permission_edit" name="permission" value="edit">
                         <span class="ml-2">Can Edit - Members can make changes</span>
                     </label>
                 </div>

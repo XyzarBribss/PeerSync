@@ -314,7 +314,7 @@
                     <td>${escapeHtml(report.report_status || '')}</td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn btn-outline-success btn-resolve" data-report-id="${escapeHtml(String(report.report_id))}" title="Resolve">
+                            <button class="btn btn-outline-success btn-resolve" data-report-id="${escapeHtml(String(report.report_id))}" data-reporter-id="${escapeHtml(String(report.reporter_id))}" title="Resolve">
                                 Resolve
                             </button>
                             <button class="btn btn-outline-secondary btn-dismiss" data-report-id="${escapeHtml(String(report.report_id))}" title="Dismiss">
@@ -341,11 +341,14 @@
 
         function handleResolve(event) {
             const reportId = event.target.dataset.reportId;
+            const reporterId = event.target.dataset.reporterId;
             if (confirm('Are you sure you want to resolve this report? This will:\n\n' +
                        '1. Suspend the user account\n' +
                        '2. Delete the reported post\n' +
-                       '3. Mark the report as resolved')) {
+                       '3. Mark the report as resolved\n' +
+                       '4. Send a thank you notification to the reporter')) {
                 
+                // First handle the report resolution
                 fetch('resolve_report.php', {
                     method: 'POST',
                     headers: {
@@ -358,12 +361,26 @@
                     if (data.error) {
                         throw new Error(data.error);
                     }
+                    // After successful resolution, send notification to reporter
+                    return fetch('send_notification.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `user_id=${reporterId}&message=Thank you for making our website clean. Your report has been resolved.`
+                    });
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
                     // Refresh the reports list
                     fetchReports();
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    displayError(error.message || 'Failed to resolve report');
+                    displayError(error.message || 'Failed to resolve report or send notification');
                 });
             }
         }

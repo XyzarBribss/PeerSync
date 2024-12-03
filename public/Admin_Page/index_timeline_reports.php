@@ -34,7 +34,6 @@ if ($result) {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -98,14 +97,24 @@ if ($result) {
             <!-- Filters -->
             <div class="p-4 border-b border-gray-200 bg-gray-50">
                 <div class="flex flex-wrap gap-4">
-                    <select id="statusFilter" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">All Statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="reviewed">Reviewed</option>
-                        <option value="resolved">Resolved</option>
-                    </select>
-                    <input type="text" id="searchInput" placeholder="Search reports..." 
-                           class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <div>
+                        <label class="block">
+                            <span class="text-sm font-medium text-gray-700 mb-1 block">Filter by Status</span>
+                            <select id="statusFilter" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="">All Statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="reviewed">Reviewed</option>
+                                <option value="resolved">Resolved</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block">
+                            <span class="text-sm font-medium text-gray-700 mb-1 block">Search Reports</span>
+                            <input type="text" id="searchInput" placeholder="Search reports..." 
+                                   class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </label>
+                    </div>
                 </div>
             </div>
 

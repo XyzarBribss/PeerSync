@@ -3,7 +3,8 @@ session_start();
 require_once '../config.php';
 
 if (!isset($_SESSION['user_id'])) {
-    echo "<div class='text-red-500'>Please log in to view notifications</div>";
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Please log in to view notifications']);
     exit;
 }
 
@@ -12,61 +13,81 @@ $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
 $limit = 10;
 
 try {
-    // First, delete notifications for non-existent posts
-    $delete_sql = "DELETE n FROM notifications n 
-                   LEFT JOIN bubble_posts bp ON n.post_id = bp.id 
-                   WHERE bp.id IS NULL AND n.post_id IS NOT NULL";
-    $conn->query($delete_sql);
+    // Get total unread count for this user
+    $unread_sql = "SELECT COUNT(*) as unread_count 
+                   FROM notifications 
+                   WHERE to_user_id = ? 
+                   AND is_read = 0";
+    $unread_stmt = $conn->prepare($unread_sql);
+    $unread_stmt->bind_param("i", $user_id);
+    $unread_stmt->execute();
+    $unread_result = $unread_stmt->get_result();
+    $unread_count = $unread_result->fetch_assoc()['unread_count'];
 
-    // Now fetch remaining valid notifications
-    $sql = "SELECT n.*, 
-            u.username, 
-            bp.title as post_title, 
-            bp.id as post_id,
-            n.type
+    // Get notifications with user and post details
+    $sql = "SELECT 
+            n.*,
+            bp.title as post_title,
+            bp.message as post_message,
+            bp.image as post_image,
+            bp.bubble_id,
+            u.username as from_username
             FROM notifications n
             LEFT JOIN users u ON n.from_user_id = u.id
             LEFT JOIN bubble_posts bp ON n.post_id = bp.id
-            WHERE n.to_user_id = ? AND (bp.id IS NOT NULL OR n.post_id IS NULL)
+            WHERE n.to_user_id = ?
             ORDER BY n.created_at DESC
             LIMIT ? OFFSET ?";
-            
+
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("iii", $user_id, $limit, $offset);
     $stmt->execute();
     $result = $stmt->get_result();
+    
+    $notifications = [];
+    while ($row = $result->fetch_assoc()) {
+        // Format the notification data
+        $notification = [
+            'id' => $row['id'],
+            'type' => $row['type'],
+            'is_read' => (bool)$row['is_read'],
+            'created_at' => $row['created_at'],
+            'from_user' => [
+                'username' => $row['from_username']
+            ],
+            'post' => null
+        ];
 
-    if ($result->num_rows === 0) {
-        echo "<div class='text-gray-500 text-center p-4'>No notifications</div>";
-    } else {
-        while ($row = $result->fetch_assoc()) {
-            $username = htmlspecialchars($row['username'] ?? 'Someone');
-            $postTitle = htmlspecialchars($row['post_title'] ?? 'a post');
-            $bgColor = $row['is_read'] ? 'bg-white' : 'bg-blue-50';
-            $postId = (int)$row['post_id'];
-            $type = $row['type'] ?? 'interaction';
-
-            // Only create clickable link if we have a valid post ID
-            if ($postId > 0) {
-                echo "<a href='postDetails.php?post_id={$postId}' class='block'>
-                        <div class='notification-item p-3 {$bgColor} border-b hover:bg-gray-50'>
-                            <div class='text-sm'>
-                                <b>{$username}</b> {$type} your post: {$postTitle}
-                            </div>
-                        </div>
-                      </a>";
-            } else {
-                echo "<div class='notification-item p-3 {$bgColor} border-b'>
-                        <div class='text-sm'>
-                            <b>{$username}</b> {$type} a post (no longer available)
-                        </div>
-                      </div>";
-            }
+        // Add post details if present
+        if ($row['post_id']) {
+            $notification['post'] = [
+                'id' => $row['post_id'],
+                'title' => $row['post_title'],
+                'message' => $row['post_message'],
+                'image' => $row['post_image'],
+                'bubble_id' => $row['bubble_id']
+            ];
         }
+
+        $notifications[] = $notification;
     }
+
+    $has_more = count($notifications) === $limit;
+
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => true,
+        'notifications' => $notifications,
+        'unread_count' => $unread_count,
+        'has_more' => $has_more
+    ]);
+
 } catch (Exception $e) {
-    error_log("Notification error: " . $e->getMessage());
-    echo "<div class='text-red-500 text-center p-4'>Error loading notifications</div>";
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error' => 'Error fetching notifications: ' . $e->getMessage()
+    ]);
 }
 
 $conn->close();

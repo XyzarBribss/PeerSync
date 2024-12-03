@@ -204,6 +204,7 @@ function joinBubble() {
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="js/notifications.js" defer></script>
     <style>
         .dropdown:hover .dropdown-menu { display: block; }
         .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.4); }
@@ -846,16 +847,22 @@ function toggleReplies(commentId) {
             <form action="postDetails.php?post_id=<?= htmlspecialchars($post_id) ?>" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="update_post_id" value="<?= htmlspecialchars($post_id) ?>">
                 <div class="mb-4">
-                    <label for="title" class="block text-gray-700">Title</label>
-                    <input type="text" name="title" id="editPostTitle" class="w-full p-2 border rounded" value="<?= htmlspecialchars($post['title']) ?>" required>
+                    <label class="block">
+                        <span class="text-gray-700">Title</span>
+                        <input type="text" name="title" id="editPostTitle" class="w-full p-2 border rounded mt-1" value="<?= htmlspecialchars($post['title']) ?>" required>
+                    </label>
                 </div>
                 <div class="mb-4">
-                    <label for="message" class="block text-gray-700">Message</label>
-                    <textarea name="message" id="editPostMessage" class="w-full p-2 border rounded" rows="4" required><?= htmlspecialchars($post['message']) ?></textarea>
+                    <label class="block">
+                        <span class="text-gray-700">Message</span>
+                        <textarea name="message" id="editPostMessage" class="w-full p-2 border rounded mt-1" rows="4" required><?= htmlspecialchars($post['message']) ?></textarea>
+                    </label>
                 </div>
                 <div class="mb-4">
-                    <label for="image" class="block text-gray-700">Image</label>
-                    <input type="file" name="image" id="editPostImage" class="w-full p-2 border rounded">
+                    <label class="block">
+                        <span class="text-gray-700">Image</span>
+                        <input type="file" name="image" id="editPostImage" class="w-full p-2 border rounded mt-1">
+                    </label>
                     <?php if (!empty($image_base64)): ?>
                         <img src="<?= $image_base64 ?>" alt="Post Image" class="w-full h-auto rounded mt-2">
                     <?php endif; ?>
@@ -866,13 +873,13 @@ function toggleReplies(commentId) {
     </div>
 
     <script>
-        // Toggle dropdown menu
-        document.getElementById('profileImage').addEventListener('click', function() {
-            const dropdownMenu = this.nextElementSibling;
-            dropdownMenu.classList.toggle('hidden');
-        });
+    // Toggle dropdown menu
+    document.getElementById('profileImage').addEventListener('click', function() {
+        const dropdownMenu = this.nextElementSibling;
+        dropdownMenu.classList.toggle('hidden');
+    });
 
-        // Fetch the list of bubbles the user has joined
+    // Fetch the list of bubbles the user has joined
 function fetchJoinedBubbles() {
     fetch("joinedBubble.php")
     .then(response => response.json())
